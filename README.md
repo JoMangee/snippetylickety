@@ -1,7 +1,7 @@
 # snippetylickety
 Small scripts and things Jo has co-created and wants to share
 
-#Secure Phone-to-Desktop Password Transfer#
+### Secure Phone-to-Desktop Password Transfer ###
 A tiny, single-file PHP tool for securely transferring long passwords or secrets from your phone to your desktop browser - without typing them manually.
 
 End-to-end encryption using AES-256-GCM derived from a short shared token
@@ -10,7 +10,7 @@ Auto-copy to clipboard on reveal
 Hides secret immediately after copy (or timeout)
 No accounts, no persistent storage, no external dependencies beyond browser crypto
 
-Features
+# Features #
 
 Universal QR code (plain HTTPS link) - works with any phone camera
 Phone can send before desktop loads (phone-first flow)
@@ -18,13 +18,13 @@ Keyboard shortcuts: E = reveal + auto-copy, D = force cleanup
 10-second countdown after reveal if no copy detected
 Files auto-delete after ~60 seconds or on success
 
-Requirements
+# Requirements
 
 PHP 8.0+ (with OpenSSL extension)
 HTTPS enabled (Web Crypto API requires secure context)
 Writable directory for temporary ciphertext files
 
-Installation
+# Installation
 
 Upload the file as index.php to your server (e.g. /public_html/ or a subdomain folder)
 Edit the CONFIG block at the top of index.php:define('BASE_URL',          'https://yourdomain.com');     // your domain
@@ -34,7 +34,7 @@ chmod 775 /path/to/storage/dir
 chown www-data:www-data /path/to/storage/dir   # or your web user
 That's it - no database, no composer, no extra files.
 
-Usage
+# Usage
 Normal flow (recommended)
 
 On desktop browser:
@@ -50,12 +50,12 @@ Secret appears blurred -> press E to reveal + auto-copy
 -> Immediately hides + "Server cleaned up ✓"
 -> Or press D anytime to force cleanup
 
-Alternate: Manual phone entry (no QR)
+# Alternate: Manual phone entry (no QR)
 
 Phone manually opens: https://yourdomain.com/?pong=abcdef12
 Then paste & send as above
 
-Security Notes
+# Security Notes
 
 Encryption: AES-256-GCM with PBKDF2-derived key from token (~600k iterations)
 Server: Only sees/stores base64-encoded ciphertext (never plaintext)
