@@ -18,6 +18,9 @@ Keyboard shortcuts: E = reveal + auto-copy, D = force cleanup
 10-second countdown after reveal if no copy detected
 Files auto-delete after ~60 seconds or on success
 
+<img width="641" height="397" alt="image" src="https://github.com/user-attachments/assets/ee765b26-cac0-400a-a9ac-7e9674830934" />
+
+
 # Requirements
 
 PHP 8.0+ (with OpenSSL extension)
