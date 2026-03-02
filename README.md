@@ -1,7 +1,7 @@
 # snippetylickety
 Small scripts and things Jo has co-created and wants to share
 
-###Secure Phone-to-Desktop Password Transfer###
+#Secure Phone-to-Desktop Password Transfer#
 A tiny, single-file PHP tool for securely transferring long passwords or secrets from your phone to your desktop browser - without typing them manually.
 
 End-to-end encryption using AES-256-GCM derived from a short shared token
@@ -27,8 +27,8 @@ Writable directory for temporary ciphertext files
 Installation
 
 Upload the file as index.php to your server (e.g. /public_html/ or a subdomain folder)
-Edit the CONFIG block at the top of index.php:define('BASE_URL',          'https://p.mesh.net.nz');     // your domain
-define('STORAGE_DIR',       '/home2/meshnet/p-mesh/');    // writable folder
+Edit the CONFIG block at the top of index.php:define('BASE_URL',          'https://yourdomain.com');     // your domain
+define('STORAGE_DIR',       '/home/yourdomain/folder/');    // writable folder
 Make sure STORAGE_DIR is writable by the web server:
 chmod 775 /path/to/storage/dir
 chown www-data:www-data /path/to/storage/dir   # or your web user
@@ -73,5 +73,5 @@ Add a random token generator button on desktop page
 Replace QR library CDN with local copy for offline use
 
 License
-MIT - feel free to use, modify, share.
-Made with heart in Tauranga, NZ - March 2026
+AGP+ - feel free to use, modify, share.
+Made with heart in Wellies, NZ - March 2026 with the help of Grok and CoPilot
