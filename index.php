@@ -36,8 +36,8 @@
 // ────────────────────────────────────────────────
 //          CONFIG – change only here!
 // ────────────────────────────────────────────────
-define('BASE_URL',          'https://p.mesh.net.nz');     // your domain (with https://)
-define('STORAGE_DIR',       '/home2/meshnet/p-mesh/');    // writable directory for temp files
+define('BASE_URL',          'https://YOURDOMAIN.com');     // your domain (with https://)
+define('STORAGE_DIR',       '/home/yourdomain/folder/');    // writable directory for temp files
 define('STORAGE_PREFIX',    'pair-');
 define('STORAGE_SUFFIX',    '.dat');
 define('MAX_FILE_AGE',      60);                          // seconds before auto-delete
