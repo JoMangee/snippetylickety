@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Industrial Tablet Camera Tool | Pad-Ex 01</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none; /* better touch experience, but input fields still editable */
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #0a0f1e;
+            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* main panel – tablet friendly, large touch targets */
+        .camera-app {
+            max-width: 800px;
+            width: 100%;
+            background: #1e2a3a;
+            border-radius: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+            backdrop-filter: blur(0px);
+            transition: all 0.2s ease;
+        }
+
+        /* header */
+        .app-header {
+            background: #0f1722;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 8px;
+            border-bottom: 1px solid #2d3e50;
+        }
+        .app-header h1 {
+            margin: 0;
+            font-size: 1.4rem;
+            font-weight: 500;
+            letter-spacing: -0.2px;
+            color: #eaf4ff;
+        }
+        .badge {
+            font-size: 0.7rem;
+            background: #2c4c6e;
+            padding: 0.3rem 0.8rem;
+            border-radius: 30px;
+            color: #cbd5e6;
+            font-family: monospace;
+        }
+
+        /* preview area */
+        .preview-container {
+            background: #000000;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 360px;
+            background: #11161f;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+            background: #000;
+            max-height: 55vh;
+            aspect-ratio: 16 / 9;
+        }
+        .placeholder-message {
+            position: absolute;
+            color: #8ba0bc;
+            background: rgba(0,0,0,0.7);
+            padding: 12px 20px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            font-weight: 500;
+        }
+
+        /* control bar with big buttons */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            padding: 1.5rem;
+            background: #17212b;
+            border-top: 1px solid #2a3b48;
+            border-bottom: 1px solid #2a3b48;
+        }
+        button {
+            background: #2c3e4e;
+            border: none;
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 14px 28px;
+            border-radius: 60px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: 0.1s linear;
+            color: white;
+            font-family: inherit;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            touch-action: manipulation;
+        }
+        button:active {
+            transform: scale(0.97);
+        }
+        .btn-primary {
+            background: #1f6e43;
+            box-shadow: 0 4px 12px rgba(31,110,67,0.3);
+        }
+        .btn-primary:hover, .btn-primary:active {
+            background: #15853e;
+        }
+        .btn-danger {
+            background: #9e3c2b;
+        }
+        .btn-danger:hover {
+            background: #b1422e;
+        }
+        .btn-secondary {
+            background: #2c5a7a;
+        }
+        button:disabled {
+            opacity: 0.5;
+            transform: none;
+            cursor: not-allowed;
+        }
+        .snapshot-area {
+            padding: 1.2rem 1.5rem 1.8rem;
+            background: #0f1720;
+        }
+        .snapshot-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            color: #bdd4ff;
+            margin-bottom: 12px;
+            font-weight: 500;
+            flex-wrap: wrap;
+        }
+        .thumb-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            background: #0b1119;
+            border-radius: 24px;
+            padding: 16px;
+            min-height: 130px;
+        }
+        .snapshot-card {
+            background: #1e2b38;
+            border-radius: 20px;
+            overflow: hidden;
+            width: 110px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            transition: 0.1s ease;
+        }
+        .snapshot-card img {
+            width: 100%;
+            height: 90px;
+            object-fit: cover;
+            display: block;
+            background: #000;
+        }
+        .snapshot-actions {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 8px;
+            background: #0f1820;
+        }
+        .snapshot-actions button {
+            background: none;
+            box-shadow: none;
+            padding: 6px 10px;
+            font-size: 0.7rem;
+            gap: 4px;
+            background: #2c4155;
+            border-radius: 30px;
+        }
+        .empty-snapshots {
+            color: #6e88a2;
+            padding: 24px;
+            text-align: center;
+            width: 100%;
+            font-style: italic;
+        }
+        .save-all {
+            background: #2a5f6e;
+            padding: 10px 22px;
+            font-size: 1rem;
+        }
+        .status-text {
+            font-size: 0.75rem;
+            margin-top: 12px;
+            color: #9cb2d0;
+            text-align: center;
+            background: #0c111c;
+            padding: 8px;
+            border-radius: 28px;
+        }
+        hr {
+            border-color: #253c4b;
+            margin: 6px 0;
+        }
+        @media (max-width: 550px) {
+            button {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+            .controls {
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="camera-app">
+    <div class="app-header">
+        <h1>📸 Ex Camera Studio</h1>
+        <div class="badge">Pad-Ex 01 P12 • Win 11 LTSC</div>
+    </div>
+
+    <!-- Camera preview panel -->
+    <div class="preview-container">
+        <video id="video" autoplay playsinline muted></video>
+        <div id="camPlaceholder" class="placeholder-message" style="display: none;">📷 Camera ready — allow permission</div>
+    </div>
+
+    <!-- main action buttons -->
+    <div class="controls">
+        <button id="startCameraBtn" class="btn-primary">🎥 Activate Camera</button>
+        <button id="snapshotBtn" disabled>📸 Take Snapshot</button>
+        <button id="stopCameraBtn" class="btn-danger" disabled>⏹️ Stop Camera</button>
+    </div>
+
+    <!-- Snapshots gallery + save -->
+    <div class="snapshot-area">
+        <div class="snapshot-title">
+            <span>🖼️ Captured Snapshots</span>
+            <button id="saveAllBtn" class="save-all" style="background:#325b70; padding: 6px 14px;">⬇️ Save All Images</button>
+        </div>
+        <div id="snapshotList" class="thumb-grid">
+            <div class="empty-snapshots">No snapshots yet. Take a picture using camera.</div>
+        </div>
+        <div class="status-text" id="statusMessage">
+            ℹ️ Tap "Activate Camera" and allow webcam permission. Works with 11MP main camera.
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- DOM elements ----------
+    const video = document.getElementById('video');
+    const startBtn = document.getElementById('startCameraBtn');
+    const snapshotBtn = document.getElementById('snapshotBtn');
+    const stopBtn = document.getElementById('stopCameraBtn');
+    const saveAllBtn = document.getElementById('saveAllBtn');
+    const snapshotContainer = document.getElementById('snapshotList');
+    const statusDiv = document.getElementById('statusMessage');
+    const placeholderMsg = document.getElementById('camPlaceholder');
+
+    // state
+    let mediaStream = null;          // active MediaStream
+    let snapshotsArray = [];          // store { id, dataUrl, timestamp }
+    let lastSnapshotId = 0;
+
+    // Helper: update status (also visible for users)
+    function setStatus(msg, isError = false) {
+        statusDiv.innerHTML = isError ? `⚠️ ${msg}` : `✅ ${msg}`;
+        if (isError) {
+            statusDiv.style.color = "#ffb4a2";
+        } else {
+            statusDiv.style.color = "#9cb2d0";
+        }
+        // auto-clear error style after 4 sec if needed (but no permanent)
+        if (isError) {
+            setTimeout(() => {
+                if (statusDiv.innerHTML.includes("⚠️")) {
+                    statusDiv.style.color = "#9cb2d0";
+                }
+            }, 4500);
+        }
+    }
+
+    // update button states based on streaming active
+    function updateUiForStream(streamActive) {
+        if (streamActive) {
+            startBtn.disabled = true;
+            snapshotBtn.disabled = false;
+            stopBtn.disabled = false;
+        } else {
+            startBtn.disabled = false;
+            snapshotBtn.disabled = true;
+            stopBtn.disabled = true;
+        }
+    }
+
+    // stop tracks and release camera
+    function stopCamera() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => {
+                track.stop();
+            });
+            mediaStream = null;
+        }
+        video.srcObject = null;
+        video.poster = '';
+        updateUiForStream(false);
+        setStatus("Camera stopped. You can restart again if needed.");
+        if (placeholderMsg) placeholderMsg.style.display = "block";
+        placeholderMsg.innerText = "📷 Camera off — tap 'Activate Camera'";
+    }
+
+    // start rear / main camera (prefer environment facing on tablets)
+    async function startCamera() {
+        // if already streaming, stop gracefully then restart
+        if (mediaStream) {
+            stopCamera();
+        }
+        // clear placeholder tentative
+        if (placeholderMsg) placeholderMsg.style.display = "none";
+
+        // constraints: prioritize rear camera (environment) for tablet 11MP main shooter
+        // also use ideal resolution to get high quality snapshot.
+        const constraints = {
+            video: {
+                facingMode: { exact: "environment" },  // main camera (rear)
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            }
+        };
+
+        // Fallback if environment not available (some tablets might label differently)
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            // However getUserMedia with facingMode: 'environment' may fail on some Windows drivers.
+            // we try with advanced constraints, if fails, fallback to default.
+        } catch (err) {
+            console.warn("Environment facingMode failed, trying default camera:", err);
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            } catch (genericErr) {
+                setStatus("Camera access denied or no camera found. Check permissions or drivers.", true);
+                if (placeholderMsg) {
+                    placeholderMsg.style.display = "block";
+                    placeholderMsg.innerText = "❌ Cannot access camera. Allow permissions in browser.";
+                }
+                updateUiForStream(false);
+                return;
+            }
+        }
+
+        // once we have stream, attach to video
+        video.srcObject = mediaStream;
+        // ensure video plays & metadata loaded for snapshot resolution
+        video.onloadedmetadata = () => {
+            video.play().catch(e => console.warn("Auto-play error", e));
+            setStatus("Camera ready — main camera active (11MP). Tap snapshot.");
+            updateUiForStream(true);
+        };
+        video.onerror = () => {
+            setStatus("Video playback error, camera maybe busy", true);
+            stopCamera();
+        };
+    }
+
+    // capture snapshot from video feed and store as dataURL (JPEG)
+    function captureSnapshot() {
+        if (!mediaStream || !video.videoWidth || !video.videoHeight) {
+            setStatus("Camera not active yet. Please activate camera first.", true);
+            return;
+        }
+
+        // create a canvas based on actual video dimension for best quality
+        const canvas = document.createElement('canvas');
+        const width = video.videoWidth;
+        const height = video.videoHeight;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, width, height);
+        
+        // generate high-quality JPEG (quality 0.92)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute:'2-digit', second:'2-digit' });
+        const id = lastSnapshotId++;
+        
+        // store snapshot
+        snapshotsArray.push({
+            id: id,
+            dataUrl: dataUrl,
+            timestamp: timestamp,
+            filename: `snapshot_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}_${id}.jpg`
+        });
+        
+        // refresh gallery
+        renderSnapshotsGallery();
+        setStatus(`Snapshot saved! (${snapshotsArray.length} total)`);
+    }
+    
+    // delete individual snapshot
+    function deleteSnapshot(idToDelete) {
+        snapshotsArray = snapshotsArray.filter(snap => snap.id !== idToDelete);
+        renderSnapshotsGallery();
+        setStatus(`Snapshot removed. ${snapshotsArray.length} snapshots left.`);
+        if (snapshotsArray.length === 0) {
+            // optional
+        }
+    }
+    
+    // download single image from dataURL
+    function downloadSingle(snapshot) {
+        const link = document.createElement('a');
+        link.download = snapshot.filename;
+        link.href = snapshot.dataUrl;
+        link.click();
+        setStatus(`Downloaded: ${snapshot.filename}`);
+    }
+    
+    // save all snapshots as individual downloads (one by one)
+    function saveAllSnapshots() {
+        if (snapshotsArray.length === 0) {
+            setStatus("No snapshots to save.", true);
+            return;
+        }
+        // iterate each and trigger download sequentially with tiny delay to avoid browser clash
+        let downloadCount = 0;
+        for (let i = 0; i < snapshotsArray.length; i++) {
+            const snap = snapshotsArray[i];
+            setTimeout(() => {
+                const a = document.createElement('a');
+                a.download = snap.filename;
+                a.href = snap.dataUrl;
+                a.click();
+                downloadCount++;
+                if (downloadCount === snapshotsArray.length) {
+                    setStatus(`Saved all ${snapshotsArray.length} snapshots.`);
+                }
+            }, i * 180); // small stagger to avoid overwhelming
+        }
+        if (snapshotsArray.length > 0) {
+            setStatus(`Starting download of ${snapshotsArray.length} images...`);
+        }
+    }
+    
+    // render thumbnail gallery with interactive buttons per snapshot
+    function renderSnapshotsGallery() {
+        if (!snapshotContainer) return;
+        
+        if (snapshotsArray.length === 0) {
+            snapshotContainer.innerHTML = `<div class="empty-snapshots">📭 No snapshots yet. Take a picture with tablet camera.</div>`;
+            return;
+        }
+        
+        // create grid items
+        let html = '';
+        // reverse order so newest first looks natural
+        const reversed = [...snapshotsArray].reverse();
+        for (const snap of reversed) {
+            const displayTime = snap.timestamp;
+            html += `
+                <div class="snapshot-card" data-id="${snap.id}">
+                    <img src="${snap.dataUrl}" alt="snapshot" loading="lazy">
+                    <div class="snapshot-actions">
+                        <button class="download-single" data-id="${snap.id}" data-filename="${snap.filename}" data-url="${snap.dataUrl}">⬇️ Save</button>
+                        <button class="delete-single" data-id="${snap.id}">🗑️ Del</button>
+                    </div>
+                    <div style="font-size: 9px; text-align:center; background:#071016; color:#9ab3cc; padding:3px;">${displayTime}</div>
+                </div>
+            `;
+        }
+        snapshotContainer.innerHTML = html;
+        
+        // attach event handlers dynamically (efficient)
+        document.querySelectorAll('.download-single').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.getAttribute('data-id'));
+                const found = snapshotsArray.find(s => s.id === id);
+                if (found) {
+                    downloadSingle(found);
+                } else {
+                    setStatus("Snapshot not found", true);
+                }
+            });
+        });
+        
+        document.querySelectorAll('.delete-single').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.getAttribute('data-id'));
+                deleteSnapshot(id);
+            });
+        });
+    }
+    
+    // Helper: check browser compatibility
+    function checkMediaSupport() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setStatus("Your browser does not support camera API (getUserMedia). Use Edge/Chrome/Firefox.", true);
+            startBtn.disabled = true;
+            return false;
+        }
+        return true;
+    }
+    
+    // event listeners & initial load
+    function init() {
+        if (!checkMediaSupport()) return;
+        
+        startBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            startCamera().catch(err => {
+                console.error("camera start error", err);
+                setStatus("Camera error: " + (err.message || "Permission denied or no camera"), true);
+                updateUiForStream(false);
+                if (placeholderMsg) {
+                    placeholderMsg.style.display = "block";
+                    placeholderMsg.innerText = "⚠️ Camera error: allow permissions & restart";
+                }
+            });
+        });
+        
+        snapshotBtn.addEventListener('click', () => {
+            captureSnapshot();
+        });
+        
+        stopBtn.addEventListener('click', () => {
+            stopCamera();
+        });
+        
+        saveAllBtn.addEventListener('click', () => {
+            saveAllSnapshots();
+        });
+        
+        // optional: when page closed, stop camera to free resources
+        window.addEventListener('beforeunload', () => {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
+            }
+        });
+        
+        // show initial hint
+        setStatus("Ready. Press 'Activate Camera' to start using 11MP main camera.");
+        updateUiForStream(false);
+        if (placeholderMsg) placeholderMsg.style.display = "block";
+        placeholderMsg.innerText = "📸 Tap Activate Camera ➕ Allow webcam access";
+    }
+    
+    // Run after DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+</script>
+</body>
+</html>

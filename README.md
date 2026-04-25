@@ -1,80 +1,91 @@
 # snippetylickety
-Small scripts and things Jo has co-created and wants to share
 
-### Secure Phone-to-Desktop Password Transfer ###
-A tiny, single-file PHP tool for securely transferring long passwords or secrets from your phone to your desktop browser - without typing them manually.
+Small scripts and things Jo has co-created and wants to share.
 
-End-to-end encryption using AES-256-GCM derived from a short shared token
-Desktop shows a QR code - phone scans to open send page automatically
-Auto-copy to clipboard on reveal
-Hides secret immediately after copy (or timeout)
-No accounts, no persistent storage, no external dependencies beyond browser crypto
+## Repository Contents
 
-# Features #
+### `pdrop/` - Secure Phone-to-Desktop Password Transfer
 
-Universal QR code (plain HTTPS link) - works with any phone camera
-Phone can send before desktop loads (phone-first flow)
-Keyboard shortcuts: E = reveal + auto-copy, D = force cleanup
-10-second countdown after reveal if no copy detected
-Files auto-delete after ~60 seconds or on success
+A tiny, single-file PHP tool for securely transferring long passwords or secrets from your phone to your desktop browser without typing them manually.
 
-<img width="641" height="397" alt="image" src="https://github.com/user-attachments/assets/ee765b26-cac0-400a-a9ac-7e9674830934" />
+Features:
 
+- End-to-end encryption using AES-256-GCM derived from a short shared token
+- Desktop shows a QR code so the phone can open the send page directly
+- Auto-copy to clipboard on reveal
+- Hides the secret immediately after copy or timeout
+- No accounts, no persistent storage, no external dependencies beyond browser crypto
+- Universal QR code flow that works with any phone camera
+- Phone-first flow supported
+- Keyboard shortcuts: `E` to reveal and auto-copy, `D` to force cleanup
+- Automatic file cleanup after about 60 seconds or on success
 
-# Requirements
+![Secure Phone-to-Desktop Password Transfer screenshot](https://github.com/user-attachments/assets/ee765b26-cac0-400a-a9ac-7e9674830934)
 
-PHP 8.0+ (with OpenSSL extension)
-HTTPS enabled (Web Crypto API requires secure context)
-Writable directory for temporary ciphertext files
+Requirements:
 
-# Installation
+- PHP 8.0+ with the OpenSSL extension
+- HTTPS enabled because Web Crypto requires a secure context
+- A writable directory for temporary ciphertext files
 
-Upload the file as index.php to your server (e.g. /public_html/ or a subdomain folder)
-Edit the CONFIG block at the top of index.php:define('BASE_URL',          'https://yourdomain.com');     // your domain
-define('STORAGE_DIR',       '/home/yourdomain/folder/');    // writable folder
-Make sure STORAGE_DIR is writable by the web server:
+Installation:
+
+1. In this repository, the file lives at `pdrop/index.php` for organization.
+1. For deployment, you can place that file directly at the document root of your `pdrop` subdomain as `index.php`. You do not need a `pdrop/` directory on the server if the subdomain itself points at the app root.
+1. Edit the config block at the top of the deployed file:
+
+```php
+define('BASE_URL', 'https://pdrop.yourdomain.com');
+define('STORAGE_DIR', '/home/yourdomain/folder/');
+```
+
+1. Make sure `STORAGE_DIR` is writable by the web server.
+
+```bash
 chmod 775 /path/to/storage/dir
-chown www-data:www-data /path/to/storage/dir   # or your web user
-That's it - no database, no composer, no extra files.
+chown www-data:www-data /path/to/storage/dir
+```
 
-# Usage
-Normal flow (recommended)
+That is it. No database, Composer setup, or extra services required.
 
-On desktop browser:
-Open https://yourdomain.com/?init=abcdef12
--> See QR code + waiting message
-On phone:
-Scan the QR with camera -> tap the link
--> Phone opens send page with token pre-filled
-On phone:
-Paste your long password/code -> click Encrypt & Send
-On desktop:
-Secret appears blurred -> press E to reveal + auto-copy
--> Immediately hides + "Server cleaned up ✓"
--> Or press D anytime to force cleanup
+Usage:
 
-# Alternate: Manual phone entry (no QR)
+1. On desktop, open `https://pdrop.yourdomain.com/?init=abcdef12`.
+1. On phone, scan the QR code and open the generated link.
+1. Paste the secret on the phone and press `Encrypt & Send`.
+1. Back on desktop, press `E` to reveal and auto-copy, or `D` to force cleanup.
 
-Phone manually opens: https://yourdomain.com/?pong=abcdef12
-Then paste & send as above
+Manual phone entry:
 
-# Security Notes
+- Open `https://pdrop.yourdomain.com/?pong=abcdef12` on the phone and send as above.
 
-Encryption: AES-256-GCM with PBKDF2-derived key from token (~600k iterations)
-Server: Only sees/stores base64-encoded ciphertext (never plaintext)
-Ephemeral: Files deleted after success, 'D' key, or 60 seconds
-Threat model: Protects against shoulder surfing, keyloggers, casual network snooping
-(Not against compromised devices or very powerful adversaries)
+Security notes:
 
-Important: Use a random 8-12 character token each time (e.g. x7k9p2m4q8r3).
-Short/weak tokens can be brute-forced.
-Customization Ideas
+- Encryption uses AES-256-GCM with a PBKDF2-derived key from the shared token.
+- The server only sees base64-encoded ciphertext, never plaintext.
+- Files are ephemeral and are deleted after success, the `D` key, or timeout.
+- Use a random 8 to 12 character token each time. Short or weak tokens can be brute-forced.
 
-Change COUNTDOWN_SECONDS for longer/shorter visibility
-Adjust QR size (width/height in new QRCode(...))
-Add a random token generator button on desktop page
-Replace QR library CDN with local copy for offline use
+### `ICAM-test.html` - Industrial Camera Test Page
 
-License
-AGP+ - feel free to use, modify, share.
-Made with heart in Wellies, NZ - March 2026 with the help of Grok and CoPilot
+`ICAM-test.html` is a standalone browser-based camera tool intended for tablet or kiosk-style testing.
+
+It provides:
+
+- Live camera preview
+- Snapshot capture
+- Local thumbnail review
+- Per-image download and delete controls
+- Bulk save for captured images
+
+Usage:
+
+- Open `ICAM-test.html` in a modern browser.
+- Allow camera access when prompted.
+- Use the on-screen controls to start the camera, take snapshots, and save images locally.
+
+## License
+
+AGP+ - feel free to use, modify, and share.
+
+Made with heart in Wellies, NZ - March 2026 with the help of Grok and Copilot.

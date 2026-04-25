@@ -248,132 +248,119 @@ if (isset($_GET['done'])) {
     const SALT = new TextEncoder().encode("<?= htmlspecialchars(SALT_STR, ENT_QUOTES, 'UTF-8') ?>");
 
     let revealed = false;
-    let countdownActive = false;
+    let copied = false;
+    let cleanupSent = false;
     let countdownTimer = null;
-    let cleanedUp = false;
-    const COUNTDOWN_SECONDS = 10;
+    let countdownLeft = 10;
+    let plainText = "";
 
-    async function cleanup() {
-        if (cleanedUp) return;
-        cleanedUp = true;
-        await fetch(`?done=${encodeURIComponent(token)}`).catch(()=>{});
-        statusEl.textContent = "Server cleaned up ✓";
-        secretEl.textContent = "Secret hidden";
-        secretEl.style.filter = 'blur(8px)';
-        secretEl.style.background = '#eee';
+    async function deriveKey() {
+        const pwBytes = new TextEncoder().encode(token);
+        const baseKey = await crypto.subtle.importKey("raw", pwBytes, "PBKDF2", false, ["deriveKey"]);
+        return crypto.subtle.deriveKey(
+            {name:"PBKDF2", salt:SALT, iterations:PBKDF2_ITER, hash:"SHA-256"},
+            baseKey,
+            {name:"AES-GCM", length:256},
+            false,
+            ["decrypt"]
+        );
     }
 
-    function startCountdown() {
-        if (countdownActive) return;
-        countdownActive = true;
-        let remaining = COUNTDOWN_SECONDS;
-
-        secretEl.textContent = `Visible (${remaining}s) – press E again to keep visible`;
-
-        countdownTimer = setInterval(() => {
-            remaining--;
-            if (remaining > 0) {
-                secretEl.textContent = `Visible (${remaining}s) – press E again to keep visible`;
-            } else {
-                clearInterval(countdownTimer);
-                countdownActive = false;
-                cleanup();
-                secretEl.textContent = "Auto-hidden (timeout)";
-                secretEl.style.filter = 'blur(8px)';
-            }
-        }, 1000);
-    }
-
-    function stopCountdown() {
-        if (countdownTimer) clearInterval(countdownTimer);
-        countdownActive = false;
-        secretEl.textContent = "Visible – ready to copy (press D to cleanup)";
+    function b64ToBytes(b64) {
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return bytes;
     }
 
     async function poll() {
         try {
-            const r = await fetch(`?poll=${encodeURIComponent(token)}`);
-            if (r.status === 200) {
-                const b64 = await r.text();
-                if (!b64) return;
-
-                statusEl.textContent = "Secret received – decrypting...";
-
-                const blob = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-                const iv  = blob.subarray(0, 12);
-                const ct  = blob.subarray(12);
-
-                const pwBytes = new TextEncoder().encode(token);
-                const baseKey = await crypto.subtle.importKey("raw", pwBytes, "PBKDF2", false, ["deriveKey"]);
-
-                const aesKey = await crypto.subtle.deriveKey(
-                    {name:"PBKDF2", salt:SALT, iterations:PBKDF2_ITER, hash:"SHA-256"},
-                    baseKey, {name:"AES-GCM", length:256}, false, ["decrypt"]
-                );
-
-                const ptBuffer = await crypto.subtle.decrypt(
-                    {name:"AES-GCM", iv, tagLength:128},
-                    aesKey,
-                    ct
-                );
-
-                const text = new TextDecoder().decode(ptBuffer);
-
-                secretEl.style.display = 'block';
-                secretEl.style.filter = 'blur(6px)';
-                secretEl.textContent = "•••••••••••• (press E to reveal)";
-
-                const revealAndTryCopy = async () => {
-                    if (revealed && countdownActive) {
-                        stopCountdown();
-                        return;
-                    }
-                    if (revealed) return;
-
-                    revealed = true;
-                    secretEl.style.filter = 'none';
-
-                    try {
-                        await navigator.clipboard.writeText(text);
-                        statusEl.textContent = "Auto-copied ✓ – cleaning up";
-                        secretEl.textContent = "Copied successfully";
-                        secretEl.style.filter = 'blur(8px)';
-                        await cleanup();
-                    } catch (err) {
-                        statusEl.textContent = "Auto-copy blocked – Ctrl+C or E to pause countdown";
-                        startCountdown();
-
-                        const onCopy = () => {
-                            statusEl.textContent = "Copy detected – hiding & cleaning up";
-                            secretEl.textContent = "Copied & hidden";
-                            secretEl.style.filter = 'blur(8px)';
-                            cleanup();
-                            document.removeEventListener('copy', onCopy);
-                        };
-                        document.addEventListener('copy', onCopy, { once: true });
-                    }
-                };
-
-                secretEl.onclick = revealAndTryCopy;
-
-                document.addEventListener('keydown', e => {
-                    if (e.key.toLowerCase() === 'e') {
-                        e.preventDefault();
-                        revealAndTryCopy();
-                    }
-                    if (e.key.toLowerCase() === 'd') {
-                        e.preventDefault();
-                        statusEl.textContent = "Manual cleanup (D key)";
-                        cleanup();
-                        secretEl.textContent = "Manually cleared";
-                        secretEl.style.filter = 'blur(8px)';
-                    }
-                });
+            const resp = await fetch(`?poll=${encodeURIComponent(token)}`, {cache: 'no-store'});
+            if (resp.status === 204) {
+                setTimeout(poll, 1200);
+                return;
             }
-        } catch(e) {}
+            if (!resp.ok) {
+                statusEl.textContent = "Server error.";
+                return;
+            }
+
+            const b64 = await resp.text();
+            const bytes = b64ToBytes(b64.trim());
+            const iv = bytes.slice(0, 12);
+            const ct = bytes.slice(12);
+
+            const key = await deriveKey();
+            const plainBuffer = await crypto.subtle.decrypt(
+                {name:"AES-GCM", iv, tagLength:128},
+                key,
+                ct
+            );
+
+            plainText = new TextDecoder().decode(plainBuffer);
+            secretEl.textContent = "•••••••••••• (press E to reveal)";
+            secretEl.style.display = 'block';
+            statusEl.textContent = "Secret received. Press E to reveal and copy.";
+        } catch (e) {
+            statusEl.textContent = "Decrypt failed. Wrong token or corrupted data.";
+        }
     }
 
-    setInterval(poll, 1500);
+    async function cleanup() {
+        if (cleanupSent) return;
+        cleanupSent = true;
+        try {
+            await fetch(`?done=${encodeURIComponent(token)}`, {cache: 'no-store'});
+        } catch (e) {}
+        statusEl.textContent = "Server cleaned up ✓";
+    }
+
+    async function revealAndCopy() {
+        if (!plainText || revealed) return;
+        revealed = true;
+        secretEl.textContent = plainText;
+        secretEl.style.display = 'block';
+
+        try {
+            await navigator.clipboard.writeText(plainText);
+            copied = true;
+            statusEl.textContent = "Copied to clipboard. Hiding...";
+            setTimeout(() => {
+                secretEl.style.display = 'none';
+                plainText = "";
+                cleanup();
+            }, 1200);
+        } catch (e) {
+            statusEl.textContent = "Press Ctrl+C manually. Auto-hide in 10s.";
+            startCountdown();
+        }
+    }
+
+    function startCountdown() {
+        countdownLeft = 10;
+        if (countdownTimer) clearInterval(countdownTimer);
+        countdownTimer = setInterval(() => {
+            countdownLeft--;
+            statusEl.textContent = `Visible for ${countdownLeft}s - press D to hide now.`;
+            if (countdownLeft <= 0) {
+                clearInterval(countdownTimer);
+                secretEl.style.display = 'none';
+                plainText = "";
+                cleanup();
+            }
+        }, 1000);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+        if (key === 'e') revealAndCopy();
+        if (key === 'd') {
+            secretEl.style.display = 'none';
+            plainText = "";
+            cleanup();
+        }
+    });
+
     poll();
     </script>
 </body>
