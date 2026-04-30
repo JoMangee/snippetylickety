@@ -21,13 +21,25 @@ if ($action === 'health') {
 // SECURITY: Check secret for all non-health actions
 if ($action !== 'health' && empty($action)) {
     if ($secret !== ($config['bot_secret'] ?? '')) {
-        die("Unauthorized - Invalid secret");
+        header('Content-Type: application/json');
+        die(json_encode([
+            'error' => 'Unauthorized - Invalid secret',
+            'keys_found' => array_keys($config),
+            'secret_provided_length' => strlen($secret),
+            'provided_secret' => $secret
+        ]));
     }
 }
 
 if ($action === 'auth' || (empty($action) && !isset($_GET['code']))) {
     if ($secret !== ($config['bot_secret'] ?? '')) {
-        die("Unauthorized - Invalid secret");
+        header('Content-Type: application/json');
+        die(json_encode([
+            'error' => 'Unauthorized - Invalid secret',
+            'keys_found' => array_keys($config),
+            'secret_provided_length' => strlen($secret),
+            'provided_secret' => $secret
+        ]));
     }
     $pkc = pocketsmith_generate_pkc(); // DEFINITIVE: pocketsmith_generate_pkc (not pkce, not pck)
     $auth_state = bin2hex(random_bytes(16));
