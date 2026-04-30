@@ -1,9 +1,8 @@
 <?php
-
 declare(strict_types=1);
 
 /**
- * Pocketsmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
+ * PocketSmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
  */
 
 function pocketsmith_load_env(string $path): array {
@@ -17,9 +16,7 @@ function pocketsmith_load_env(string $path): array {
         if (strpos($line, '=') === false) continue;
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
-        $value = trim($value, " \t\n\r\0\x0B\"'"); // Strip quotes too
-        
-        // Standardize keys: POCKETSMITH_DEV_KEY -> dev_key, BOT_SECRET -> bot_secret
+        $value = trim($value, " \t\n\r\0\x0B\"'");
         $cleanKey = strtolower(str_replace('POCKETSMITH_', '', $name));
         $config[$cleanKey] = $value;
     }
@@ -47,7 +44,7 @@ function pocketsmith_auth_url(string $developerKey, string $redirectUri, string 
         'mode' => 'readonly',
         'state' => $state
     ];
-    return 'https://mcpsand.pocketsmith.com/oauth/authorize?' . http_build_query($params);
+    return 'https://mcp-readonly.pocketsmith.com/oauth/authorize?' . http_build_query($params);
 }
 
 function pocketsmith_exchange_token(string $developerKey, string $redirectUri, string $code, string $verifier): array {
@@ -58,29 +55,24 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
         'code' => $code,
         'code_verifier' => $verifier
     ];
-
-    $ch = curl_init('https://mcpsand.pocketsmith.com/oauth/token');
+    $ch = curl_init('https://mcp-readonly.pocketsmith.com/oauth/token');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
-
     $response = curl_exec($ch);
     $decoded = json_decode((string)$response, true);
     curl_close($ch);
-
     if (!isset($decoded['access_token'])) {
         return ['ok' => false, 'error' => 'Token exchange failed', 'raw' => $decoded];
     }
-
     return ['ok' => true, 'session' => $decoded];
 }
 
 function pocketsmith_mcp_request(string $token, string $action): array {
-    $url = 'https://mcpsand.pocketsmith.com/mcp';
+    $url = 'https://mcp-readonly.pocketsmith.com/mcp';
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token", "Accept: application/json"]);
-
     $response = curl_exec($ch);
     return json_decode((string)$response, true) ?? ['ok' => false, 'error' => 'Invalid response'];
 }
