@@ -18,7 +18,7 @@ function pocketsmith_load_env(string $path): array {
         
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
-        $value = trim($value, " \t\n\r\0\x0B\"'"); 
+        $value = trim($value, " \t\n\r\0\x0B\""); 
         
         // Normalize key: lowercase
         $lowerKey = strtolower($name);
@@ -70,7 +70,7 @@ function pocketsmith_auth_url(string $developerKey, string $redirectUri, string 
         'mode' => 'readonly',
         'state' => $state
     ];
-    return 'https://mcps-readonly.pocketsmith.com/oauth/authorize?' . http_build_query($params);
+    return 'https://mcp-readonly.pocketsmith.com/oauth/authorize?' . http_build_query($params);
 }
 
 function pocketsmith_exchange_token(string $developerKey, string $redirectUri, string $code, string $verifier): array {
@@ -81,7 +81,7 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
         'code' => $code,
         'code_verifier' => $verifier
     ];
-    $ch = curl_init('https://mcps-readonly.pocketsmith.com/oauth/token');
+    $ch = curl_init('https://mcp-readonly.pocketsmith.com/oauth/token');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
@@ -95,42 +95,50 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
 }
 
 function pocketsmith_mcp_request(string $token, string $action): array {
-    $url = 'https://mcps-readonly.pocketsmith.com/mcp';
+    $url = "https://mcp-readonly.pocketsmith.com/mcp";
     
-    // Build JSON-RPC 2.0 request body
-    $requestBody = json_encode([
+    $method = 'tools/call';
+    $params = [
+        'name' => ($action === 'accounts') ? 'list_accounts' : $action,
+        'arguments' => (object)[]
+    ];
+    
+    $payload = json_encode([
         'jsonrpc' => '2.0',
-        'id' => uniqid(),
-        'method' => 'tools/call',
-        'params' => [
-            'name' => $action,
-            'arguments' => []
-        ]
+        'method' => $method,
+        'params' => $params,
+        'id' => uniqid()
     ]);
-    
+
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $requestBody);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Authorization: Basic ' . base64_encode($token . ':'),
         'Content-Type: application/json',
-        'Accept: application/json'
+        'Authorization: Bearer ' . $token
     ]);
+    // Add a timeout and follow redirects
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     
     $response = curl_exec($ch);
+    $error = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    
-    $decoded = json_decode($response, true);
-    
-    // Handle MCP response format
-    if ($decoded && isset($decoded['result'])) {
-        return ['success' => true, 'data' => $decoded['result']];
-    } elseif ($decoded && isset($decoded['error'])) {
-        return ['success' => false, 'error' => $decoded['error']['message'] ?? 'MCP error', 'raw' => $decoded];
-    } else {
-        return ['success' => false, 'error' => 'Invalid response', 'raw' => $response];
+
+    if ($response === false) {
+        return [
+            'ok' => false,
+            'status' => $httpCode,
+            'error' => 'cURL Error: ' . $error
+        ];
     }
+
+    return [
+        'status' => $httpCode,
+        'response' => json_decode($response, true)
+    ];
 }
 
 function pocketsmith_save_session(array $session): void {
