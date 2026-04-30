@@ -92,37 +92,36 @@ function pocketsmith_mcp_request(string $token, string $action): array {
     $url = "https://mcp-readonly.pocketsmith.com/mcp";
     
     // Map internal actions to MCP tool calls
-    if ($action === 'accounts') {
-        // For accounts, we need user_id first
-        // This function will be called with action='me' to get user_id
-        // Or we can pass user_id as part of the action string
-        $toolName = 'list_accounts';
-    } elseif ($action === 'me') {
-        $toolName = 'get_me';
-    } else {
-        $toolName = $action;
-    }
+    $toolName = $action;
+    if ($action === 'accounts') $toolName = 'list_accounts';
     
-    // If action contains 'with_user:', extract user_id
-    $user_id = null;
-    if (strpos($action, 'with_user:') === 0) {
-        $user_id = str_replace('with_user:', '', $action);
-    }
-    
-    $params = [
+    // Initialize default params for tools/call
+    $paramsObj = (object)[
         'name' => $toolName,
         'arguments' => new stdClass()
     ];
     
-    // Add user_id parameter if available and needed
-    if ($user_id !== null) {
-        $params['arguments']->userId = $user_id;
+    // Determine MCP method
+    $mcpMethod = 'tools/call';
+    
+    if ($action === 'list_tools') {
+        $mcpMethod = 'tools/list';
+        // For tools/list, params should be empty object
+        $paramsObj = (object)[];
+    }
+    
+    // For other actions, extract user_id if present
+    if ($action !== 'list_tools') {
+        if (strpos($action, 'with_user:') === 0) {
+            $userId = substr($action, 12);
+            $paramsObj->arguments->userId = $userId;
+        }
     }
     
     $payload = json_encode([
         'jsonrpc' => '2.0',
-        'method' => 'tools/call',
-        'params' => $params,
+        'method' => $mcpMethod,
+        'params' => $paramsObj,
         'id' => uniqid()
     ]);
 
