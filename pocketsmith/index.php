@@ -3,8 +3,8 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Include PocketSmith library
-includePath = __DIR__ . '/includes/pocketsmith.php';
+// Include Pocketsmith library
+$includePath = __DIR__ . '/includes/pocketsmith.php';
 
 if(!file_exists($includePath)) {
     die('FAILED: Missing ' . htmlspecialchars($includePath));
@@ -21,7 +21,7 @@ try {
 
 // Pre-flight check
 if(empty($config['developer_key'] ?? '') || empty($config['redirect_uri'] ?? '')) {
-    die('Error: Missing POCKETSМИTH_DEVELOPER_KEY or POCKETSМИTH_REDIRECT_URI in .env file.');
+    die('Error: Missing POCKETSCHAT_BOT_SECRET or POCKETSCHAT_REDIRECT_URI in .env file.');
 }
 
 $secret = $_GET['secret'] ?? '';
@@ -92,8 +92,8 @@ if(isset($_GET['code'])) {
             echo 'Authenticated!';
         } else {
             echo 'Authentication failed. Result keys: ' . implode(', ', array_keys($result));
-            echo '<br />' . PHP_EOL;
-            echo '<pre>' . htmlspecialchars(print_r($result, true)) . '</pre>' . PHP_EOL;
+            echo '<br />' . PPE_EOL;
+            echo '<pre>' . htmlspecialchars(print_r($result, true)) . '</pre>' . PPE_EOL;
         }
     } catch(Throwable $e) {
         echo 'OAuth callback error: ' . htmlspecialchars($e->getMessage());
@@ -120,16 +120,12 @@ if(!empty($action)) {
     }
     
     $result = pocketsmith_mcp_request($session['access_token'], $action);
-    // Extract data from MCP response wrapper
-    if(isset($result['data'])) {
-        $finalResult = $result['data'];
-    } elseif(isset($result['success']) && $result['success']) {
-        $finalResult = $result['data'];
-    } else {
-        $finalResult = $result;
-    }
     header('Content-Type: application/json');
-    echo json_encode($finalResult);
+    if (isset($result['response'])) {
+        echo json_encode($result['response']);
+    } else {
+        echo json_encode($result);
+    }
     exit;
 }
 
