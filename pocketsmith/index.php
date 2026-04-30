@@ -1,25 +1,27 @@
 <?php
 // Debug output first to catch parse errors
 header('X-Debug: PocketSmith Index');
-echo'<!-- PHP Initialized -->' . PHP_EOL;
+echo '<!-- PHP Initialized -->' . PHP_EOL;
 
-echo'<!-- Debug: Line 1 -->' . PHP_EOL;
+echo '<!-- Debug: Line 1 -->' . PHP_EOL;
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-echo'<!-- Debug: Line 2 -->' . PHP_EOL;
+echo '<!-- Debug: Line 2 -->' . PHP_EOL;
 error_reporting(E_ALL);
-echo'<!-- Debug: Line 3 -->' . PHP_EOL;
+echo '<!-- Debug: Line 3 -->' . PHP_EOL;
 
 // Pre-check include path
-echo'<!-- Debug: Line 4 -->' . PHP_EOL;
+echo '<!-- Debug: Line 4 -->' . PHP_EOL;
 $includePath = __DIR__ . '/includes/pocketsmith.php';
-echo'<!-- Debug: Include path: ' . htmlspecialchars($includePath) . ' -->' . PHP_EOL;
+echo '<!-- Debug: Include path: ' . htmlspecialchars($includePath) . ' -->' . PHP_EOL;
 
 if(!file_exists($includePath)) {
     die('FATAL: Missing ' . htmlspecialchars($includePath));
 }
-echo'<!-- Debug: Includes loaded successfully -->' . PHP_EOL;
-echo'<!-- Debug: Line 6 -->' . PHP_EOL;
+echo '<!-- Debug: Line 5 -->' . PHP_EOL;
+
+require_once $includePath;
+echo '<!-- Debug: Includes loaded successfully -->' . PHP_EOL;
 
 // Load config
 echo'<!-- Debug: Loading config... -->' . PHP_EOL;
@@ -33,8 +35,8 @@ try {
 echo'<!-- Debug: Line 7 -->' . PHP_EOL;
 
 // Pre-flight check with proper error message (no line breaks in string)
-if(empty($config['developer_key'] ??'') || empty($config['redirect_uri']??'')) {
-    die('Error: Missing POCKETSMITH_DEVELOPER_KEY or POCKETSMT_REDIRECT_URI in .env file.');
+if(empty($config['developer_key'] ?? '') || empty($config['redirect_uri'] ?? '')) {
+    die('Error: Missing POCKETSMITH_DEVELOPER_KEY or POCKETSMITH_REDIRECT_URI in .env file.');
 }
 echo'<!-- Debug: Pre-flight check passed -->' . PHP_EOL;
 echo'<!-- Debug: Line 8 -->' . PHP_EOL;
@@ -48,8 +50,8 @@ if($action ==='health') {
     header('Content-Type: application/json');
     echo json_encode([
         'status' => 'operational',
-        'env_loaded' =>!empty($config),
-        'secret_set' =>!empty($config['bot_secret']??''),
+        'env_loaded' => !empty($config),
+        'secret_set' => !empty($config['bot_secret']??''),
         'keys' => array_keys($config)
     ]);
     exit;
@@ -109,7 +111,7 @@ if(isset($_GET['code'])) {
             pocketsmith_save_session($sessionData);
             echo'Authenticated!';
         } else {
-            echo'Authentication failed. Token exchange error response:<br />' . PHP_EOL;
+            echo'Authentication failed. Token exchange error response:<br/>' . PHP_EOL;
             echo'<pre>' . htmlspecialchars(print_r($result, true)) . '</pre>' . PHP_EOL;
         }
     } catch(Throwable $e) {
@@ -124,7 +126,7 @@ echo'<!-- Debug: Line 11 -->' . PHP_EOL;
 if(!empty($action)) {
     $session = pocketsmith_load_session();
     if(empty($session['access_token']??null)) {
-        // Call CORRECT function name: pocketsmith_generate_pkce (NOT pkce)
+        // Call CURRECT function name: pocketsmith_generate_pkce (NOT pkc)
         $pkce = pocketsmith_generate_pkce();
         $auth_state = bin2hex(random_bytes(16));
         $pkce['auth_state'] = $auth_state;
@@ -139,7 +141,7 @@ if(!empty($action)) {
         exit;
     }
     
-    // Use CORRECT function name: pocketsmith_mcp_request (NOT mpc)
+    // Use CURRECT function name: pocketsmith_mcp_request (NOT mpc)
     $result = pocketsmith_mcp_request($session['access_token'], $action);
     header('Content-Type: application/json');
     echo json_encode($result);
@@ -149,7 +151,7 @@ echo'<!-- Debug: Line 12 -->' . PHP_EOL;
 
 // 5. Default: OAuth Flow
 try {
-    // Call CORRECT function name
+    // Call CURRECT function name
     $pkce = pocketsmith_generate_pkce();
     $auth_state = bin2hex(random_bytes(16));
     $pkce['auth_state'] = $auth_state;
