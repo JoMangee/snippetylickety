@@ -54,9 +54,9 @@ function pocketsmith_get_config(): array {
 
 /**
  * Generate PKCE verifier and challenge
- * DEFINITIVE NAME: pocketsmith_generate_pkc (NOT pkce, NOT pck)
+ * STANDARDIZED NAME: pocketsmith_generate_pkce (PKCE = Proof Key for Code Exchange)
  */
-function pocketsmith_generate_pkc(): array {
+function pocketsmith_generate_pkce(): array {
     $verifier = bin2hex(random_bytes(32));
     $challenge = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(hash('SHA256', $verifier, true)));
     return ['verifier' => $verifier, 'challenge' => $challenge];
@@ -67,12 +67,12 @@ function pocketsmith_generate_pkc(): array {
  */
 function pocketsmith_auth_url(): string {
     $config = pocketsmith_get_config();
-    $pkc = pocketsmith_generate_pkc();
+    $pkce = pocketsmith_generate_pkce();
     $params = [
         'client_id' => $config['developer_key'],
         'redirect_uri' => $config['redirect_uri'],
         'response_type' => 'code',
-        'code_challenge' => $pkc['challenge'],
+        'code_challenge' => $pkce['challenge'],
         'code_challenge_method' => 'S256',
         'mode' => 'readonly',
         'state' => bin2hex(random_bytes(16)),
