@@ -1,48 +1,30 @@
 <?php
-// Debug output first to catch parse errors
-header('X-Debug: PocketSmith Index');
-echo '<!-- PHP Initialized -->' . PHP_EOL;
-
-echo '<!-- Debug: Line 1 -->' . PHP_EOL;
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-echo '<!-- Debug: Line 2 -->' . PHP_EOL;
+// Error handling
 error_reporting(E_ALL);
-echo '<!-- Debug: Line 3 -->' . PHP_EOL;
+ini_set('display_errors', 1);
 
-// Pre-check include path
-echo '<!-- Debug: Line 4 -->' . PHP_EOL;
+// Include Pocketsmith library
 $includePath = __DIR__ . '/includes/pocketsmith.php';
-echo '<!-- Debug: Include path: ' . htmlspecialchars($includePath) . ' -->' . PHP_EOL;
 
 if(!file_exists($includePath)) {
     die('FAILED: Missing ' . htmlspecialchars($includePath));
 }
-echo '<!-- Debug: Line 5 -->' . PHP_EOL;
 
 require_once $includePath;
-echo '<!-- Debug: Includes loaded successfully -->' . PHP_EOL;
 
 // Load config
-echo '<!-- Debug: Loading config... -->' . PHP_EOL;
 try {
     $config = pocketsmith_get_config();
-    echo '<!-- Debug: Config loaded, keys: ' . implode(', ', array_keys($config)) . ' -->' . PHP_EOL;
 } catch(Throwable $e) {
-    echo '<!-- Error loading config: ' . htmlspecialchars($e->getMessage()) . ' -->' . PHP_EOL;
     die('FAILED: Error loading config: ' . htmlspecialchars($e->getMessage()));
 }
-echo '<!-- Debug: Line 7 -->' . PHP_EOL;
 
-// Pre-flight check with proper error message (no line breaks in string)
+// Pre-flight check
 if(empty($config['developer_key'] ?? '') || empty($config['redirect_uri'] ?? '')) {
     die('Error: Missing POCKETSMITH_DEVELOPER_KEY or POCKETSMITH_REDIRECT_URI in .env file.');
 }
-echo '<!-- Debug: Pre-flight check passed -->' . PHP_EOL;
-echo '<!-- Debug: Line 8 -->' . PHP_EOL;
 
 $secret = $_GET['secret'] ?? '';
-echo '<!-- Debug: secret val: ' . htmlspecialchars($secret) . ' -->' . PHP_EOL;
 $action = $_GET['action'] ?? '';
 
 // 1. Health check
@@ -56,7 +38,6 @@ if($action === 'health') {
     ]);
     exit;
 }
-echo '<!-- Debug: Line 9 -->' . PHP_EOL;
 
 // 2. Security Check
 $botSecret = $config['bot_secret'] ?? '';
@@ -75,7 +56,7 @@ if(isset($_GET['code'])) {
             }
         }
     } catch(Throwable $e) {
-        echo '<!-- Session load error: ' . htmlspecialchars($e->getMessage()) . ' -->' . PHP_EOL;
+        // Silent - session load error
     }
 }
 
@@ -84,7 +65,6 @@ if(!$allowed) {
     echo json_encode(['ok' => false, 'error' => 'Forbidden']);
     exit;
 }
-echo '<!-- Debug: Line 10 -->' . PHP_EOL;
 
 // 3. OAuth Callback
 if(isset($_GET['code'])) {
@@ -119,13 +99,11 @@ if(isset($_GET['code'])) {
     }
     exit;
 }
-echo '<!-- Debug: Line 11 -->' . PHP_EOL;
 
 // 4. API Requests
 if(!empty($action)) {
     $session = pocketsmith_load_session();
     if(empty($session['access_token']??null)) {
-        // Call CURLRCT function name: pocketsmith_generate_pkc (NOT pkce)
         $pKC = pocketsmith_generate_pkc();
         $auth_state = bin2hex(random_bytes(16));
         $pKC['auth_state'] = $auth_state;
@@ -140,17 +118,14 @@ if(!empty($action)) {
         exit;
     }
     
-    // Use CURLRCT function name: pocketsmith_mcp_request (NOT mcp)
     $result = pocketsmith_mcp_request($session['access_token'], $action);
     header('Content-Type: application/json');
     echo json_encode($result);
     exit;
 }
-echo '<!-- Debug: Line 12 -->' . PHP_EOL;
 
 // 5. Default: OAuth Flow
 try {
-    // Call CURLRCT function name
     $pKC = pocketsmith_generate_pkc();
     $auth_state = bin2hex(random_bytes(16));
     $pKC['auth_state'] = $auth_state;
@@ -163,6 +138,5 @@ try {
     );
     header("Location: " . $url);
 } catch(Throwable $e) {
-    echo '<!-- OAuth init error: ' . htmlspecialchars($e->getMessage()) . ' -->' . PHP_EOL;
     echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
 }
