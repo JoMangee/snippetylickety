@@ -1,13 +1,7 @@
 <?php
 if (isset($_GET['action']) && $_GET['action'] === 'health') {
     header('Content-Type: application/json');
-    echo json_encode([
-        'status' => 'ok',
-        'php_version' => PHP_VERSION,
-        'config_loaded' => function_exists('pocketsmith_get_config'),
-        'env_exists' => file_exists(__DIR__ . '/.env'),
-        'data_dir_writable' => is_writable(__DIR__ . '/data')
-    ]);
+    echo json_encode(['status' => 'operational']);
     exit;
 }
 
@@ -29,7 +23,7 @@ if ($method === 'GET' && !isset($_GET['code']) && !isset($_GET['action'])) {
     $pck = pocketsmith_generate_pck();
 
     session_start();
-    $_SESSION['ps_pke_verifier'] = $pck['verifier'];
+    $_SESSION['ps_pk_verifier'] = $pck['verifier'];
 
     $authUrl = pocketsmith_auth_url(
         $config['developer_key'],
@@ -44,7 +38,7 @@ if ($method === 'GET' && !isset($_GET['code']) && !isset($_GET['action'])) {
 // 2. Handle OAuth Callback
 if ($method === 'GET' && isset($_GET['code'])) {
     session_start();
-    $verifier = $_SESSION['ps_pke_verifier'] ?? '';
+    $verifier = $_SESSION['ps_pk_verifier'] ?? '';
 
     $result = pocketsmith_exchange_token(
         $config['developer_key'],
@@ -64,7 +58,7 @@ if ($method === 'GET' && isset($_GET['code'])) {
 }
 
 // 3. Handle API Proxy
-$secret = bot_secret();
+$secret = bin2hex(random_bytes(32));
 $inputSecret = '';
 
 if ($method === 'POST') {
