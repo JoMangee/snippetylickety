@@ -1,4 +1,5 @@
 <?php
+if (isset($_GET['test'])) { die('PHP IS WORKING'); }
 // Debug output first to catch parse errors
 header('X-Debug: PocketSmith Index');
 echo '<!-- PHP Initialized -->' . PHP_EOL;
@@ -11,7 +12,7 @@ error_reporting(E_ALL);
 echo '<!-- Debug: Line 3 -->' . PHP_EOL;
 
 // FIXED: Added $ prefix before includePath
-$includePath = __DIR__ . '/includes/pocketsmith.php';
+includePath = __DIR__ . '/includes/pocketsmith.php';
 echo '<!-- Debug: Include path: ' . htmlspecialchars($includePath) . ' -->' . PHP_EOL;
 
 if (!file_exists($includePath)) {
@@ -111,7 +112,7 @@ if (isset($_GET['code'])) {
 if (!empty($action)) {
     $session = pocketsmith_load_session();
     if (empty($session['access_token'] ?? null)) {
-        $pkc = pocketsmith_generate_pkc();
+        $pkc = pocketsmith_generate_pkce();
         $auth_state = bin2hex(random_bytes(16));
         $pkc['auth_state'] = $auth_state;
         pocketsmith_save_session($pkc);
@@ -136,7 +137,7 @@ if (!empty($action)) {
 }
 
 try {
-    $pkc = pocketsmith_generate_pkc();
+    $pkc = pocketsmith_generate_pkce();
     $auth_state = bin2hex(random_bytes(16));
     $pkc['auth_state'] = $auth_state;
     pocketsmith_save_session($pkc);
