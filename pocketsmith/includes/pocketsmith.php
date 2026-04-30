@@ -2,140 +2,150 @@
 declare(strict_types=1);
 
 /**
- * Pocketsmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
+ * PocketSmith MCP Bridge
+ * Core functions for connecting to PocketSmith API
  */
 
-function pocketsmith_load_env(string $path): array {
-    if (!file_exists($path)) {
-        return [];
+/**
+ * Load environment variables from .env file
+ */
+function pocketsmith_load_env(): array {
+    $paths = [
+        SCRIPT_FILENAME . '/includes/.env',
+        SCRIPT_FILENAME . '/.env',
+        __DIR__ . '/includes/.env',
+    ];
+    
+    $envPath = null;
+    foreach ($paths as $path) {
+        if (file_exists($path)) {
+            $envPath = $path;
+            break;
+        }
     }
-    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    
+    if (!$envPath) return [];
+    
     $config = [];
+    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-        $line = trim($line);
-        if (empty($line) || strpbrk($line, '#') === 0) continue;
-        if (strpbrk($line, '=') === false) continue;
-        
-        list($name, $value) = explode('=', $line, 2);
-        $name = trim($name);
-        $value = trim($value, " \t\n\r\x0B\"");  
-        
-        $lowerKey = strtolower($name);
-        $config[$lowerKey] = $value;
-        
-        $noPrefix = str_replace('pocketsmith_', '', $lowerKey);
-        $config[$noPrefix] = $value;
+        if (strpos($line, '=') === false) continue;
+        [$name, $value] = explode('=', $line, 2);
+        $config[trim($name)] = trim($value);
     }
     return $config;
 }
 
+/**
+ * Get configuration from environment or defaults
+ */
 function pocketsmith_get_config(): array {
-    // Try multiple paths to find .env file
-    $paths = [
-        // Path relative to index.php location
-        dirname($_SERVER['SCRIPT_FILENAME']) . '/.env',
-        // Path if pocketsmith.php is in includes/ directory
-        __DIR__ . '/../.env',
-        // Fallback
-        __DIR__ . '/.env'
-    ];
-    
-    foreach ($paths as $path) {
-        if (file_exists($path)) {
-            return pocketsmith_load_env($path);
-        }
-    }
-    return [];
+    $env = pocketsmith_load_env();
+    return array_merge([
+        'developer_key' => $env['DEVELOPER_KEY'] ?? '',
+        'redirect_uri' => $env['REDIRECT_URI'] ?? '',
+        'bot_secret' => $env['BOT_SECRET'] ?? '',
+    ], $env);
 }
 
-function pocketsmith_generate_pkce(): array {
+/**
+ * Generate PKCE verifier and challenge
+ * DEFINITIVE NAME: pocketsmith_generate_pkc
+ */
+function pocketsmith_generate_pkc(): array {
     $verifier = bin2hex(random_bytes(32));
     $challenge = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(hash('SHA256', $verifier, true)));
     return ['verifier' => $verifier, 'challenge' => $challenge];
 }
 
-function pocketsmith_auth_url(string $developerKey, string $redirectUri, string $challenge, string $state): string {
+/**
+ * Generate OAuth authorization URL
+ */
+function pocketsmith_auth_url(): string {
+    $config = pocketsmith_get_config();
+    $pkce = pocketsmith_generate_pkc();
     $params = [
-        'client_id' => $developerKey,
-        'redirect_uri' => $redirectUri,
+        'client_id' => $config['developer_key'],
+        'redirect_uri' => $config['redirect_uri'],
         'response_type' => 'code',
-        'code_challenge' => $challenge,
+        'code_challenge' => $pkce['challenge'],
         'code_challenge_method' => 'S256',
         'mode' => 'readonly',
-        'state' => $state
+        'state' => bin2hex(random_bytes(16)),
     ];
     return 'https://mcp-readonly.pocketsmith.com/oauth/authorize?' . http_build_query($params);
 }
 
-function pocketsmith_exchange_token(string $developerKey, string $redirectUri, string $code, string $verifier): array {
-    $params = [
-        'client_id' => $developerKey,
-        'redirect_uri' => $redirectUri,
-        'grant_type' => 'authorization_code',
-        'code' => $code,
-        'code_verifier' => $verifier
-    ];
+/**
+ * Exchange authorization code for access token
+ */
+function pocketsmith_exchange_token(string $code): array {
+    $config = pocketsmith_get_config();
+    $session = pocketsmith_load_session();
+    
     $ch = curl_init('https://mcp-readonly.pocketsmith.com/oauth/token');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+        'grant_type' => 'authorization_code',
+        'client_id' => $config['developer_key'],
+        'code' => $code,
+        'redirect_uri' => $config['redirect_uri'],
+        'code_verifier' => $session['verifier'] ?? '',
+    ]));
+    
     $response = curl_exec($ch);
-    $decoded = json_decode((string)$response, true);
     curl_close($ch);
-    if (!isset($decoded['access_token'])) {
-        return ['ok' => false, 'error' => 'Token exchange failed', 'raw' => $decoded];
-    }
-    return ['ok' => true, 'session' => $decoded];
+    
+    return json_decode($response, true) ?? ['error' => 'Token exchange failed'];
 }
 
+/**
+ * Make MCP request to PocketSmith
+ * 
+ * @param string $token OAuth access token
+ * @param string $method Method name ('list_accounts', 'get_current_user', 'tools/list', 'tools/call')
+ * @param array $params Method parameters
+ * @param bool $raw Return raw response instead of parsed JSON
+ * @return array
+ */
 function pocketsmith_mcp_request(string $token, string $method, array $params = [], bool $raw = false): array {
-    // If method is a direct tool name (not 'tools/call' or 'list_tools'), wrap it
-    if ($method !== 'tools/call' && $method !== 'tools/list' && !str_starts_with($method, 'tools/')) {
-        // Wrap as tools/call
-        $method = 'tools/call';
-        $params = [
-            'name' => $method,
-            'arguments' => (object)$params
-        ];
+    // Build MCP payload according to PocketSmith MCP spec
+    if ($method === 'tools/list' || $method === 'tools/call') {
+        // Direct MCP method - use params as-is
+        $mcpMethod = $method;
+        $mcpParams = (object)($params['name'] ?? array_key_exists('name', $params) ? [] : $params);
+        
+        if ($method === 'tools/call' && !isset($params['name'])) {
+            // If calling a tool directly, wrap it
+            $mcpParams = (object)['name' => $method, 'arguments' => (object)$params];
+        }
+    } else {
+        // Direct tool name - wrap as tools/call
+        $mcpMethod = 'tools/call';
+        $mcpParams = (object)['name' => $method, 'arguments' => (object)$params];
+    }
+    
+    // Special case: tools/list gets no name wrapper
+    if ($method === 'tools/list') {
+        $mcpParams = (object)['name' => 'list_tools', 'arguments' => (object)$params];
     }
     
     $payload = json_encode([
         'jsonrpc' => '2.0',
-        'method' => $method,
-        'params' => (object)$params,
-        'id' => uniqid()
+        'method' => $mcpMethod,
+        'params' => $mcpParams,
+        'id' => uniqid(),
     ]);
     
-    if ($raw) {
-        // For debug mode, return the payload and response as strings
-        $ch = curl_init("https://mcp-readonly.pocketsmith.com/mcp");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            'Accept: application/json, text/event-stream',
-            'Authorization: Bearer ' . $token
-        ]);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-        
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
-        
-        return ['status' => $httpCode, 'response' => $response, 'payload' => $payload, 'error' => $error];
-    }
-    
-    // Standard mode: parse JSON response
-    $ch = curl_init("https://mcp-readonly.pocketsmith.com/mcp");
+    $ch = curl_init('https://mcp-readonly.pocketsmith.com/mcp');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Content-Type: application/json',
         'Accept: application/json, text/event-stream',
-        'Authorization: Bearer ' . $token
+        'Authorization: Bearer ' . $token,
     ]);
     curl_setopt($ch, CURLOPT_TIMEOUT, 15);
     
@@ -144,19 +154,39 @@ function pocketsmith_mcp_request(string $token, string $method, array $params = 
     $error = curl_error($ch);
     curl_close($ch);
     
-    if ($response === false) return ['ok' => false, 'error' => $error];
+    if ($response === false) {
+        return ['ok' => false, 'error' => $error];
+    }
+    
+    if ($raw) {
+        return ['status' => $httpCode, 'response' => $response, 'payload' => $payload, 'error' => $error];
+    }
+    
     return ['status' => $httpCode, 'response' => json_decode($response, true)];
 }
 
+/**
+ * Save session to temp directory
+ */
 function pocketsmith_save_session(array $session): void {
-    $dir = __DIR__ . '/../data';
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
-    }
-    file_put_contents($dir . '/pocketsmith_session.json', json_encode($session));
+    $dir = sys_get_temp_dir();
+    $hash = md5($_SERVER['REMOTE_ADDR'] ?? 'default');
+    $filename = "{$dir}/ps_session_{$hash}";
+    file_put_contents($filename, json_encode($session));
 }
 
-function pocketsmith_load_session(): ?array {
-    $path = __DIR__ . '/../data/pocketsmith_session.json';
-    return file_exists($path) ? json_decode(file_get_contents($path), true) : null;
+/**
+ * Load session from temp directory
+ */
+function pocketsmith_load_session(): array {
+    $dir = sys_get_temp_dir();
+    $hash = md5($_SERVER['REMOTE_ADDR'] ?? 'default');
+    $filename = "{$dir}/ps_session_{$hash}";
+    
+    if (!file_exists($filename)) {
+        return [];
+    }
+    
+    $data = file_get_contents($filename);
+    return json_decode($data, true) ?? [];
 }
