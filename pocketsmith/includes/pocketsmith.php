@@ -1,4 +1,3 @@
-<?php
 declare(strict_types=1);
 
 /**
@@ -13,7 +12,7 @@ function pocketsmith_load_env(string $path): array {
     $env = [];
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) continue;
+        if (ltrim($line, '#') === '') continue;
         if (strpos($line, '=') === false) continue;
         list($key, $value) = explode('=', $line, 2);
         $env[trim($key)] = trim($value);
