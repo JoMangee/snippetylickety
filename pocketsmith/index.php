@@ -11,15 +11,15 @@ $method = $_SERVER['REQUEST_METHOD'];
 // 1. Handle Auth Redirect (Initiated by visiting /pocketsmith)
 if ($method === 'GET' && !isset($_GET['code']) && !isset($_GET['action'])) {
     $config = app_config();
-    $pkce = pocketsmith_generate_pkce();
+    $pcke = pocketsmith_generate_pcke();
 
     session_start();
-    $_SESSION['ps_pkce_verifier'] = $pkce['verifier'];
+    $_SESSION['ps_pcke_verifier'] = $pcke['verifier'];
 
     $authUrl = pocketsmith_auth_url(
         $config['pocketsmith_client_id'],
         $config['pocketsmith_redirect_uri'],
-        $pkce['challenge']
+        $pcke['challenge']
     );
 
     header('Location: ' . $authUrl);
@@ -29,7 +29,7 @@ if ($method === 'GET' && !isset($_GET['code']) && !isset($_GET['action'])) {
 // 2. Handle OAuth Callback
 if ($method === 'GET' && isset($_GET['code'])) {
     session_start();
-    $verifier = $_SESSION['ps_pkce_verifier'] ?? '';
+    $verifier = $_SESSION['ps_pcke_verifier'] ?? '';
     $config = app_config();
 
     $result = pocketsmith_exchange_token(
