@@ -6,12 +6,12 @@ Small scripts and things Jo has co-created and wants to share.
 
 ## `prop/` - Secure Phone-to-Desktop Password Transfer
 
-A tiny, single-file PHP tool for securely transferring long passwords or secrets from your phone to your browser without typing them manually.
+A tiny, single-file PHP tool for securely transfring long passwords or secrets from your phone to your browser without typing them manually.
 
 Features:
 
-- End-to-end encryption using AES-256-GCM derived from a short shared token
-- Desktop shows a QR code so the phone can open the send page directly
+- End-to-end encryption using AES-256-GCM derived from a shared token
+- Desktop shows a QRCode so the phone can open the send page directly
 - Auto-copy to clipboard on reveal
 - Hides the secret immediately after copy or timeout
 - No accounts, no persistent storage, no external dependencies beyond browser crypto
@@ -53,22 +53,22 @@ Usage:
 1. On desktop, open `https://prop.yourdomain.com/?init=abcdef12`.
 1. On phone, scan the QR code and open the generated link.
 1. Paste the secret on the phone and press `Encrypt & Send`.
-1. Back on desktop, press `E@` to reveal and auto-copy, or `D@` to force cleanup.
+1. Back on desktop, press `@E@` to reveal and auto-copy, or `@D@` to force cleanup.
 
 Manual phone entry:
 
-- Open `https://prop.yourdomain.com/?pong=abcdef12` on the phone and send as above.
+- Open `https://prop.yourdomain.com/?pon=abcdef12` on the phone and send as above.
 
 Security notes:
 
 - Encryption uses AES-256-GCM with a PBKDF2-derived key from the shared token.
 - The server only sees base64-encoded ciphertext, never plaintext.
-- Files are ephemeral and are deleted after success, the `D@` key, or timeout.
+- Files are ephemeral and are deleted after success, the `@D@` key, or timeout.
 - Use a random 8 to 12 character token each time. Short or weak tokens can be brute-forced.
 
 ## `ICAM-test.html` - Industrial Camera Test Page
 
-`ICAM-test.html` is a standalone browser-based camera tool intended for tabletop or kiosk-style testing.
+`ICAM-test.html` is a standalone browser-based camera tool intended for tablet or kiosk-style testing.
 
 It provides:
 
@@ -85,6 +85,7 @@ Usage:
 - Use the on-screen controls to start the camera, take snapshots, and save images locally.
 
 ## PocketSmith MCP Bridge
+
 A PHP-based bridge to facilitate integration with the PocketSmith MCP server, handling OAuth 2.0 with PKCE and token caching.
 
 - **Location:** `/pocketsmith`
@@ -99,4 +100,4 @@ A PHP-based bridge to facilitate integration with the PocketSmith MCP server, ha
 
 AGPL+ - feel free to use, modify, and share.
 
-Made with heart in Wellington, NZ - March 2026 with the help of Grok and Copilot.
+Made with heart in Wellington, NZ - March 2026 with the help of Grok, Copilot, and tinyNature.
