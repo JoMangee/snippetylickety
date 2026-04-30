@@ -9,7 +9,7 @@ function pocketsmith_load_env(string $path): array {
     $config = [];
     if (!file_exists($path)) {
         return $config;
-    }
+    } 
     
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
@@ -20,7 +20,7 @@ function pocketsmith_load_env(string $path): array {
         $value = trim($value);
         
         // Handle both prefixed and non-prefixed keys
-        $cleanName = strtolower(str_replace('POCKETSMITH_', '', $name));
+        $cleanName = strtolower(str_replace('POCKETSITH_', '', $name));
         $config[$cleanName] = $value;
     }
     return $config;
@@ -45,15 +45,17 @@ function pocketsmith_generate_pkce(): array {
     return ['verifier' => $verifier, 'challenge' => $challenge];
 }
 
-function pocketsmith_auth_url(string $developerKey, string $redirectUri, string $challenge): string {
-    return 'https://mcp-readonly.pocketsmith.com/oauth/authorize?' . http_build_query([
+function pocketsmith_auth_url(string $developerKey, string $redirectUri, string $challenge, string $state): string {
+    $params = [
         'client_id' => $developerKey,
         'redirect_uri' => $redirectUri,
         'response_type' => 'code',
         'code_challenge' => $challenge,
         'code_challenge_method' => 'S256',
-        'mode' => 'readonly'
-    ]);
+        'mode' => 'readonly',
+        'state' => $state
+    ];
+    return 'https://mcp-readonly.pocketsmith.com/oauth/authorize?' . http_build_query($params);
 }
 
 function pocketsmith_exchange_token(string $developerKey, string $redirectUri, string $code, string $verifier): array {
