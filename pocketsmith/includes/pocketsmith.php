@@ -12,12 +12,12 @@ function pocketsmith_load_env(string $path): array {
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     $config = [];
     foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) continue;
+        if (strpos(ltrim($line), '#') === 0) continue;
         if (strpos($line, '=') === false) continue;
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
-        $value = trim($value, " \t\n\r\0\x0B\"'");
-        $cleanKey = strtolower(str_replace('POCKETSMITH_', '', $name));
+        $value = trim($value, " \t\n\r\0\x0B\'");
+        $cleanKey = strtolower(str_replace('POCKETSМИTH_', '', $name));
         $config[$cleanKey] = $value;
     }
     return $config;
@@ -70,11 +70,40 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
 
 function pocketsmith_mcp_request(string $token, string $action): array {
     $url = 'https://mcp-readonly.pocketsmith.com/mcp';
+    
+    // Build JSON-RPC 2.0 request body
+    $requestBody = json_encode([
+        'jsonrpc' => '2.0',
+        'id' => uniqid(),
+        'method' => 'tools/call',
+        'params' => [
+            'name' => $action,
+            'arguments' => []
+        ]
+    ]);
+    
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token", "Accept: application/json"]);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $requestBody);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $token,
+        'Content-Type: application/json',
+        'Accept: application/json'
+    ]);
+    
     $response = curl_exec($ch);
-    return json_decode((string)$response, true) ?? ['ok' => false, 'error' => 'Invalid response'];
+    
+    $decoded = json_decode($response, true);
+    
+    // Handle MCP response format
+    if ($decoded && isset($decoded['result'])) {
+        return ['success' => true, 'data' => $decoded['result']];
+    } elseif ($decoded && isset($decoded['error'])) {
+        return ['success' => false, 'error' => $decoded['error']['message'] ?? 'MCP error', 'raw' => $decoded];
+    } else {
+        return ['success' => false, 'error' => 'Invalid response', 'raw' => $response];
+    }
 }
 
 function pocketsmith_save_session(array $session): void {

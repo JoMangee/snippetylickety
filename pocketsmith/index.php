@@ -3,8 +3,8 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Include Pocketsmith library
-$includePath = __DIR__ . '/includes/pocketsmith.php';
+// Include PocketSmith library
+includePath = __DIR__ . '/includes/pocketsmith.php';
 
 if(!file_exists($includePath)) {
     die('FAILED: Missing ' . htmlspecialchars($includePath));
@@ -21,7 +21,7 @@ try {
 
 // Pre-flight check
 if(empty($config['developer_key'] ?? '') || empty($config['redirect_uri'] ?? '')) {
-    die('Error: Missing POCKETSMITH_DEVELOPER_KEY or POCKETSMITH_REDIRECT_URI in .env file.');
+    die('Error: Missing POCKETSМИTH_DEVELOPER_KEY or POCKETSМИTH_REDIRECT_URI in .env file.');
 }
 
 $secret = $_GET['secret'] ?? '';
@@ -50,6 +50,7 @@ if($botSecret && hash_equals($botSecret, $secret)) {
 if(isset($_GET['code'])) {
     try {
         $sessionData = pocketsmith_load_session();
+        
         if($sessionData && isset($sessionData['auth_state'])) {
             if(hash_equals($sessionData['auth_state'], $_GET['state'] ?? '')) {
                 $allowed = true;
@@ -104,14 +105,14 @@ if(isset($_GET['code'])) {
 if(!empty($action)) {
     $session = pocketsmith_load_session();
     if(empty($session['access_token']??null)) {
-        $pKC = pocketsmith_generate_pkc();
+        $PKC = pocketsmith_generate_pkc();
         $auth_state = bin2hex(random_bytes(16));
-        $pKC['auth_state'] = $auth_state;
-        pocketsmith_save_session($pKC);
+        $PKC['auth_state'] = $auth_state;
+        pocketsmith_save_session($PKC);
         $url = pocketsmith_auth_url(
             $config['developer_key'] ?? '',
             $config['redirect_uri'] ?? '',
-            $pKC['challenge'],
+            $PKC['challenge'],
             $auth_state
         );
         header("Location: " . $url);
@@ -119,21 +120,29 @@ if(!empty($action)) {
     }
     
     $result = pocketsmith_mcp_request($session['access_token'], $action);
+    // Extract data from MCP response wrapper
+    if(isset($result['data'])) {
+        $finalResult = $result['data'];
+    } elseif(isset($result['success']) && $result['success']) {
+        $finalResult = $result['data'];
+    } else {
+        $finalResult = $result;
+    }
     header('Content-Type: application/json');
-    echo json_encode($result);
+    echo json_encode($finalResult);
     exit;
 }
 
 // 5. Default: OAuth Flow
 try {
-    $pKC = pocketsmith_generate_pkc();
+    $PKC = pocketsmith_generate_pkc();
     $auth_state = bin2hex(random_bytes(16));
-    $pKC['auth_state'] = $auth_state;
-    pocketsmith_save_session($pKC);
+    $PKC['auth_state'] = $auth_state;
+    pocketsmith_save_session($PKC);
     $url = pocketsmith_auth_url(
         $config['developer_key'] ?? '',
         $config['redirect_uri'] ?? '',
-        $pKC['challenge'],
+        $PKC['challenge'],
         $auth_state
     );
     header("Location: " . $url);
