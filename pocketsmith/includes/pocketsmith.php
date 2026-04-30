@@ -1,45 +1,37 @@
 <?php
+
 declare(strict_types=1);
 
 /**
- * PocketSmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
+ * Pocketsmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
  */
 
 function pocketsmith_load_env(string $path): array {
-    $config = [];
     if (!file_exists($path)) {
-        return $config;
-    } 
-    
+        return [];
+    }
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $config = [];
     foreach ($lines as $line) {
-        if (strpos(ltrim($line), '#') === 0) continue;
+        if (strpos(trim($line), '#') === 0) continue;
         if (strpos($line, '=') === false) continue;
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
-        $value = trim($value);
+        $value = trim($value, " \t\n\r\0\x0B\"'"); // Strip quotes too
         
-        // Handle both prefixed and non-prefixed keys
-        $cleanName = strtolower(str_replace('POCKETSITH_', '', $name));
-        $config[$cleanName] = $value;
+        // Standardize keys: POCKETSMITH_DEV_KEY -> dev_key, BOT_SECRET -> bot_secret
+        $cleanKey = strtolower(str_replace('POCKETSMITH_', '', $name));
+        $config[$cleanKey] = $value;
     }
     return $config;
 }
 
 function pocketsmith_get_config(): array {
-    $config = pocketsmith_load_env(__DIR__ . '/../.env');
-    
-    // Merge with config.php values if they exist
-    if (function_exists('app_config')) {
-        $appConfig = app_config();
-        $config['developer_key'] = $config['developer_key'] ?? ($appConfig['pocketsmith_developer_key'] ?? '');
-        $config['redirect_uri'] = $config['redirect_uri'] ?? ($appConfig['pocketsmith_redirect_uri'] ?? '');
-    }
-    
-    return $config;
+    $envPath = dirname(__DIR__) . '/.env';
+    return pocketsmith_load_env($envPath);
 }
 
-function pocketsmith_generate_pkce(): array {
+function pocketsmith_generate_pkc(): array {
     $verifier = bin2hex(random_bytes(32));
     $challenge = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(hash('sha256', $verifier, true)));
     return ['verifier' => $verifier, 'challenge' => $challenge];
@@ -55,7 +47,7 @@ function pocketsmith_auth_url(string $developerKey, string $redirectUri, string 
         'mode' => 'readonly',
         'state' => $state
     ];
-    return 'https://mcp-readonly.pocketsmith.com/oauth/authorize?' . http_build_query($params);
+    return 'https://mcpsand.pocketsmith.com/oauth/authorize?' . http_build_query($params);
 }
 
 function pocketsmith_exchange_token(string $developerKey, string $redirectUri, string $code, string $verifier): array {
@@ -67,7 +59,7 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
         'code_verifier' => $verifier
     ];
 
-    $ch = curl_init('https://mcp-readonly.pocketsmith.com/oauth/token');
+    $ch = curl_init('https://mcpsand.pocketsmith.com/oauth/token');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
@@ -84,7 +76,7 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
 }
 
 function pocketsmith_mcp_request(string $token, string $action): array {
-    $url = 'https://mcp-readonly.pocketsmith.com/mcp';
+    $url = 'https://mcpsand.pocketsmith.com/mcp';
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token", "Accept: application/json"]);
