@@ -13,24 +13,18 @@ function pocketsmith_load_env(string $path): array {
     $config = [];
     foreach ($lines as $line) {
         $line = trim($line);
-        if (empty($line) || substr($line, '#') === 0) continue;
-        if (strstr($line, '=') === false) continue;
+        if (empty($line) || strpos($line, '#') === 0) continue;
+        if (strpos($line, '=') === false) continue;
         
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
-        $value = trim($value, " \t\n\r\0\x0B\""); 
+        $value = trim($value, " \t\n\r\0\x0B\"'"); 
         
-        // Normalize key: lowercase
         $lowerKey = strtolower($name);
         $config[$lowerKey] = $value;
         
-        // Also store without POCKETSMT_H_ prefix (handles POCKETSMT_H_, pocketsmith_, etc.)
         $noPrefix = str_replace('pocketsmith_', '', $lowerKey);
         $config[$noPrefix] = $value;
-        
-        // Also try without any prefix variations
-        $alternate = strtolower(str_replace('POCKETSMT_H_', '', $name));
-        $config[trim($alternate)] = $value;
     }
     return $config;
 }
@@ -86,7 +80,7 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
     $response = curl_exec($ch);
-    $decoded = json_encode((string)$response, true);
+    $decoded = json_decode((string)$response, true);
     curl_close($ch);
     if (!isset($decoded['access_token'])) {
         return ['ok' => false, 'error' => 'Token exchange failed', 'raw' => $decoded];
@@ -127,7 +121,7 @@ function pocketsmith_mcp_request(string $token, string $action): array {
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    // Check for cURL execution errors BEFORE json_decode
+    // Check for curl execution errors BEFORE json_decode
     if ($error !== '') {
         return [
             'ok' => false,
