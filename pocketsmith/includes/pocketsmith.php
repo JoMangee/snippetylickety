@@ -92,7 +92,11 @@ function pocketsmith_mcp_request(string $token, string $action): array {
 }
 
 function pocketsmith_save_session(array $session): void {
-    file_put_contents(__DIR__ . '/../data/pocketsmith_session.json', json_encode($session));
+    $dir = __DIR__ . '/../data';
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+    file_put_contents($dir . '/pocketsmith_session.json', json_encode($session));
 }
 
 function pocketsmith_load_session(): ?array {
