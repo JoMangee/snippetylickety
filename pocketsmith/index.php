@@ -23,7 +23,8 @@ if ($action === 'health') {
 
 // 2. Security Check (stable secret from .env)
 $botSecret = $config['bot_secret'] ?? '';
-if (empty($botSecret) || !hash_equals($botSecret, $secret)) {
+$inputSecret = $_GET['secret'] ?? $_GET['state'] ?? '';
+if (empty($botSecret) || !hash_equals($botSecret, $inputSecret)) {
     header('HTTP/1.1 403 Forbidden');
     echo json_encode(['ok' => false, 'error' => 'Forbidden']);
     exit;
@@ -53,21 +54,21 @@ if (isset($_GET['code'])) {
 if (!empty($action)) {
     $session = pocketsmith_load_session();
     if (empty($session['access_token'])) {
-        $pkce = pocketsmith_generate_pkce();
+        $pkce = pocketsmith_generate_pkc();
         pocketsmith_save_session($pkce);
-        $url = pocketsmith_auth_url($config['developer_key'], $config['redirect_uri'], $pkce['challenge']);
+        $url = pocketsmith_auth_url($config['developer_key'], $config['redirect_uri'], $pkce['challenge'], $secret);
         header("Location: $url");
         exit;
     }
     
-    $result = pocketsmith_mcm_request($session['access_token'], $action);
+    $result = pocketsmith_mcp_request($session['access_token'], $action);
     header('Content-Type: application/json');
     echo json_encode($result);
     exit;
 }
 
 // 5. Default: Start OAuth flow
-$pkce = pocketsmith_generate_pkce();
+$pkce = pocketsmith_generate_pkc();
 pocketsmith_save_session($pkce);
-$url = pocketsmith_auth_url($config['developer_key'], $config['redirect_uri'], $pkce['challenge']);
+$url = pocketsmith_auth_url($config['developer_key'], $config['redirect_uri'], $pkce['challenge'], $secret);
 header("Location: $url");
