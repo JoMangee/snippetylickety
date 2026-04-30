@@ -1,6 +1,6 @@
 <?php
 $includePath = __DIR__ . '/includes/pocketsmith.php';
-if (!file_exists($includePath)) die("Missing includes");
+if(!file_exists($includePath)) die("Missing includes");
 require_once $includePath;
 
 $config = pocketsmith_get_config();
@@ -15,10 +15,10 @@ if ($action === 'health') {
 
 if ($action === 'auth' || (empty($action) && !isset($_GET['code']))) {
     if ($secret !== ($config['bot_secret'] ?? '')) die("Unauthorized");
-    $pck = pocketsmith_generate_pck();
+    $pck = pocketsmith_generate_pkc();
     $auth_state = bin2hex(random_bytes(16));
     pocketsmith_save_session(['verifier' => $pck['verifier'], 'state' => $auth_state]);
-    $params = ['client_id' => $config['developer_key'], 'redirect_uri' => $config['redirect_uri'], 'response_type' => 'code', 'code_challenge' => $pck['challenge'], 'code_challenge_method' => 'S256', 'mode' => 'readonly', 'state' => $auth_state];
+    $params = ['client_id' => $config['developer_key'], 'redirect_uri' => $config['redirect_uri'], 'response_type' => 'code', 'code_challenge' => $pck['code_challenge'], 'code_challenge_method' => 'S256', 'mode' => 'readonly', 'state' => $auth_state];
     header("Location: https://mcp-readonly.pocketsmith.com/oauth/authorize?" . http_build_query($params));
     exit;
 }
