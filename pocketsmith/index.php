@@ -11,7 +11,7 @@ error_reporting(E_ALL);
 echo '<!-- Debug: Line 3 -->' . PHP_EOL;
 
 // FIXED: Added $ prefix before includePath
-$includePath = __DIR__ . '/includes/pocketsmith.php';
+(includePath = __DIR__ . '/includes/pocketsmith.php');
 echo '<!-- Debug: Include path: ' . htmlspecialchars($includePath) . ' -->' . PHP_EOL;
 
 if (!file_exists($includePath)) {
@@ -28,7 +28,18 @@ $secret = $_GET['secret'] ?? '';
 $action = $_GET['action'] ?? '';
 
 if (empty($config['developer_key'] ?? '') || empty($config['redirect_uri'] ?? '')) {
-    die('Error: Missing POCKETSMITH_DEVELOPER_KEY or POCKETSMITH_REDIRECT_URI in .env file.');
+    header('Content-Type: application/json');
+    $envPath = dirname(__DIR__) . '/.env';
+    echo json_encode([
+        'ok' => false,
+        'error' => 'Missing POCKETSMITH_DEVELOPER_KEY or POCKETSMITH_REDIRECT_URI',
+        'env_path' => $envPath,
+        'file_exists' => file_exists($envPath),
+        'env_content_preview' => file_exists($envPath) ? substr(file_get_contents($envPath), 0, 200) : 'N/A',
+        'keys_found' => array_keys($config),
+        'config_count' => count($config)
+    ]);
+    exit;
 }
 
 if ($action === 'health') {
@@ -52,12 +63,12 @@ if ($botSecret && hash_equals($botSecret, $secret)) {
 if (isset($_GET['code'])) {
     try {
         $sessionData = pocketsmith_load_session();
-        if ($sessionData && isset($sessionData['oauth_state'])) {
-            if (hash_equals($sessionData['oauth_state'], $_GET['state'] ?? '')) {
+        if ($sessionData && isset($sessionData['auth_state'])) {
+            if (hash_equals($sessionData['auth_state'], $_GET['state'] ?? '')) {
                 $allowed = true;
             }
         }
-    } catch (Throwable $e) {
+    } (Throwable $e) {
         // Silent - session load error
     }
 }
@@ -91,7 +102,7 @@ if (isset($_GET['code'])) {
             echo '<br />' . PHP_EOL;
             echo '<pre>' . htmlspecialchars(print_r($result, true)) . '</pre>' . PHP_EOL;
         }
-    } catch (Throwable $e) {
+    } (Throwable $e) {
         echo 'OAuth callback error: ' . htmlspecialchars($e->getMessage());
     }
     exit;
@@ -136,6 +147,6 @@ try {
         $auth_state
     );
     header("Location: " . $url);
-} catch (Throwable $e) {
+} (Throwable $e) {
     echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
 }
