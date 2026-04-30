@@ -28,7 +28,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // 1. Handle Auth Redirect
 if ($method === 'GET' && !isset($_GET['code']) && !isset($_GET['action'])) {
-    $pck = pocketsmith_generate_pkce();
+    $pck = pocketsmith_generate_pkc();
 
     session_start();
     $_SESSION['ps_pk_verifier'] = $pck['verifier'];
