@@ -60,7 +60,7 @@ if (!empty($action)) {
         exit;
     }
     
-    $result = pocketsmith_mcp_request($session['access_token'], $action);
+    $result = pocketsmith_mcm_request($session['access_token'], $action);
     header('Content-Type: application/json');
     echo json_encode($result);
     exit;
