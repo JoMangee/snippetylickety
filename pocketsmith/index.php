@@ -1,27 +1,27 @@
-&lt;?php
+<?php
 // Debug output first to catch parse errors
 header('X-Debug: PocketSmith Index');
-echo '&lt;!-- PHP Initialized --&gt;' . PHP_EOL;
+echo '<!-- PHP Initialized -->' . PHP_EOL;
 
-echo '&lt;!-- Debug: Line 1 --&gt;' . PHP_EOL;
+echo '<!-- Debug: Line 1 -->' . PHP_EOL;
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-echo '&lt;!-- Debug: Line 2 --&gt;' . PHP_EOL;
+echo '<!-- Debug: Line 2 -->' . PHP_EOL;
 error_reporting(E_ALL);
-echo '&lt;!-- Debug: Line 3 --&gt;' . PHP_EOL;
+echo '<!-- Debug: Line 3 -->' . PHP_EOL;
 
 // FIXED: Added $ prefix before includePath
 $includePath = __DIR__ . '/includes/pocketsmith.php';
-echo '&lt;!-- Debug: Include path: ' . htmlspecialchars($includePath) . ' --&gt;' . PHP_EOL;
+echo '<!-- Debug: Include path: ' . htmlspecialchars($includePath) . ' -->' . PHP_EOL;
 
 if (!file_exists($includePath)) {
     die('FATAL: Missing ' . htmlspecialchars($includePath));
 }
-echo '&lt;!-- Debug: Line 5 --&gt;' . PHP_EOL;
+echo '<!-- Debug: Line 5 -->' . PHP_EOL;
 
 require_once $includePath;
-echo '&lt;!-- Debug: Includes loaded successfully --&gt;' . PHP_EOL;
-echo '&lt;!-- Debug: Line 6 --&gt;' . PHP_EOL;
+echo '<!-- Debug: Includes loaded successfully -->' . PHP_EOL;
+echo '<!-- Debug: Line 6 -->' . PHP_EOL;
 
 $config = pocketsmith_get_config();
 $secret = $_GET['secret'] ?? '';
@@ -99,8 +99,8 @@ if (isset($_GET['code'])) {
             echo 'Authenticated!';
         } else {
             echo 'Authentication failed. Result keys: ' . implode(', ', array_keys($result));
-            echo '&lt;br /&gt;' . PHP_EOL;
-            echo '&lt;pre&gt;' . htmlspecialchars(print_r($result, true)) . '&lt;/pre&gt;' . PHP_EOL;
+            echo '<br />' . PHP_EOL;
+            echo '<pre>' . htmlspecialchars(print_r($result, true)) . '</pre>' . PHP_EOL;
         }
     } catch (Throwable $e) {
         echo 'OAuth callback error: ' . htmlspecialchars($e->getMessage());
