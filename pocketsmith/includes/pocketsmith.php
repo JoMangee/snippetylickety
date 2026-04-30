@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Pocketsmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
+ * PocketSmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
  */
 
 function pocketsmith_load_env(string $path): array {
@@ -18,7 +18,7 @@ function pocketsmith_load_env(string $path): array {
         
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
-        $value = trim($value, " \t\n\r\0\x0B\""); 
+        $value = trim($value, " \t\n\r\0\x0B\"");  
         
         $lowerKey = strtolower($name);
         $config[$lowerKey] = $value;
@@ -91,15 +91,37 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
 function pocketsmith_mcp_request(string $token, string $action): array {
     $url = "https://mcp-readonly.pocketsmith.com/mcp";
     
-    $method = 'tools/call';
+    // Map internal actions to MCP tool calls
+    if ($action === 'accounts') {
+        // For accounts, we need user_id first
+        // This function will be called with action='me' to get user_id
+        // Or we can pass user_id as part of the action string
+        $toolName = 'list_accounts';
+    } elseif ($action === 'me') {
+        $toolName = 'get_me';
+    } else {
+        $toolName = $action;
+    }
+    
+    // If action contains 'with_user:', extract user_id
+    $user_id = null;
+    if (strpos($action, 'with_user:') === 0) {
+        $user_id = str_replace('with_user:', '', $action);
+    }
+    
     $params = [
-        'name' => ($action === 'accounts') ? 'list_accounts' : $action,
-        'arguments' => (object)[]
+        'name' => $toolName,
+        'arguments' => new stdClass()
     ];
+    
+    // Add user_id parameter if available and needed
+    if ($user_id !== null) {
+        $params['arguments']->userId = $user_id;
+    }
     
     $payload = json_encode([
         'jsonrpc' => '2.0',
-        'method' => $method,
+        'method' => 'tools/call',
         'params' => $params,
         'id' => uniqid()
     ]);
@@ -113,7 +135,6 @@ function pocketsmith_mcp_request(string $token, string $action): array {
         'Accept: application/json, text/event-stream',
         'Authorization: Bearer ' . $token
     ]);
-    // Add a timeout and follow redirects
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     
@@ -122,31 +143,24 @@ function pocketsmith_mcp_request(string $token, string $action): array {
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    // Check for curl execution errors BEFORE json_decode
-    if ($error !== '') {
+    if ($response === false || $error !== '') {
         return [
             'ok' => false,
             'status' => $httpCode,
-            'error' => ' CURL Error: ' . $error,
-            'raw' => null
+            'error' => 'cURL Error: ' . ($error ?: 'No response')
         ];
     }
-    
-    // Now safe to decode - response is not false
+
     $decoded = json_decode($response, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
         return [
             'ok' => false,
             'status' => $httpCode,
-            'error' => 'JSON decode error: ' . json_last_error_msg(),
-            'raw' => json_decode($response, false)
+            'error' => 'JSON decode error: ' . json_last_error_msg()
         ];
     }
-
-    return [
-        'status' => $httpCode,
-        'response' => $decoded
-    ];
+    
+    return $decoded;
 }
 
 function pocketsmith_save_session(array $session): void {
