@@ -13,8 +13,8 @@ function pocketsmith_load_env(string $path): array {
     $config = [];
     foreach ($lines as $line) {
         $line = trim($line);
-        if (empty($line) || strpos($line, '#') === 0) continue;
-        if (strpos($line, '=') === false) continue;
+        if (empty($line) || substr($line, '#') === 0) continue;
+        if (strstr($line, '=') === false) continue;
         
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
@@ -24,12 +24,12 @@ function pocketsmith_load_env(string $path): array {
         $lowerKey = strtolower($name);
         $config[$lowerKey] = $value;
         
-        // Also store without POCKETSMITH_ prefix (handles POCKETSMITH_, pocketsmith_, etc.)
+        // Also store without POCKETSMT_H_ prefix (handles POCKETSMT_H_, pocketsmith_, etc.)
         $noPrefix = str_replace('pocketsmith_', '', $lowerKey);
         $config[$noPrefix] = $value;
         
         // Also try without any prefix variations
-        $alternate = strtolower(str_replace('POCKETSMITH_', '', $name));
+        $alternate = strtolower(str_replace('POCKETSMT_H_', '', $name));
         $config[trim($alternate)] = $value;
     }
     return $config;
@@ -86,7 +86,7 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
     $response = curl_exec($ch);
-    $decoded = json_decode((string)$response, true);
+    $decoded = json_encode((string)$response, true);
     curl_close($ch);
     if (!isset($decoded['access_token'])) {
         return ['ok' => false, 'error' => 'Token exchange failed', 'raw' => $decoded];
@@ -127,17 +127,30 @@ function pocketsmith_mcp_request(string $token, string $action): array {
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    if ($response === false) {
+    // Check for cURL execution errors BEFORE json_decode
+    if ($error !== '') {
         return [
             'ok' => false,
             'status' => $httpCode,
-            'error' => 'cURL Error: ' . $error
+            'error' => 'cURL Error: ' . $error,
+            'raw' => null
+        ];
+    }
+    
+    // Now safe to decode - response is not false
+    $decoded = json_decode($response, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return [
+            'ok' => false,
+            'status' => $httpCode,
+            'error' => 'JSON decode error: ' . json_last_error_msg(),
+            'raw' => json_decode($response, false)
         ];
     }
 
     return [
         'status' => $httpCode,
-        'response' => json_decode($response, true)
+        'response' => $decoded
     ];
 }
 
