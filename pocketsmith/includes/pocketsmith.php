@@ -13,8 +13,8 @@ function pocketsmith_load_env(string $path): array {
     $config = [];
     foreach ($lines as $line) {
         $line = trim($line);
-        if (empty($line) || strpos($line, '#') === 0) continue;
-        if (strpos($line, '=') === false) continue;
+        if (empty($line) || strpbrk($line, '#') === 0) continue;
+        if (strpbrk($line, '=') === false) continue;
         
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
@@ -88,44 +88,15 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
     return ['ok' => true, 'session' => $decoded];
 }
 
-function pocketsmith_mcp_request(string $token, string $action): array {
-    $url = "https://mcp-readonly.pocketsmith.com/mcp";
-    
-    // Map internal actions to MCP tool calls
-    $toolName = $action;
-    if ($action === 'accounts') $toolName = 'list_accounts';
-    
-    // Initialize default params for tools/call
-    $paramsObj = (object)[
-        'name' => $toolName,
-        'arguments' => new stdClass()
-    ];
-    
-    // Determine MCP method
-    $mcpMethod = 'tools/call';
-    
-    if ($action === 'list_tools') {
-        $mcpMethod = 'tools/list';
-        // For tools/list, params should be empty object
-        $paramsObj = (object)[];
-    }
-    
-    // For other actions, extract user_id if present
-    if ($action !== 'list_tools') {
-        if (strpos($action, 'with_user:') === 0) {
-            $userId = substr($action, 12);
-            $paramsObj->arguments->userId = $userId;
-        }
-    }
-    
+function pocketsmith_mcp_request(string $token, string $tool, array $params = []): array {
     $payload = json_encode([
         'jsonrpc' => '2.0',
-        'method' => $mcpMethod,
-        'params' => $paramsObj,
+        'method' => $tool,
+        'params' => (object)$params,
         'id' => uniqid()
     ]);
 
-    $ch = curl_init($url);
+    $ch = curl_init("https://mcp-readonly.pocketsmith.com/mcp");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
@@ -134,32 +105,15 @@ function pocketsmith_mcp_request(string $token, string $action): array {
         'Accept: application/json, text/event-stream',
         'Authorization: Bearer ' . $token
     ]);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
     
     $response = curl_exec($ch);
-    $error = curl_error($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
     curl_close($ch);
 
-    if ($response === false || $error !== '') {
-        return [
-            'ok' => false,
-            'status' => $httpCode,
-            'error' => 'cURL Error: ' . ($error ?: 'No response')
-        ];
-    }
-
-    $decoded = json_decode($response, true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        return [
-            'ok' => false,
-            'status' => $httpCode,
-            'error' => 'JSON decode error: ' . json_last_error_msg()
-        ];
-    }
-    
-    return $decoded;
+    if ($response === false) return ['ok' => false, 'error' => $error];
+    return ['status' => $httpCode, 'response' => json_decode($response, true)];
 }
 
 function pocketsmith_save_session(array $session): void {
