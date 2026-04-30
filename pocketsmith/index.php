@@ -1,4 +1,16 @@
 <?php
+if (isset($_GET['action']) && $_GET['action'] === 'health') {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'status' => 'ok',
+        'php_version' => PHP_VERSION,
+        'config_loaded' => function_exists('pocketsmith_get_config'),
+        'env_exists' => file_exists(__DIR__ . '/.env'),
+        'data_dir_writable' => is_writable(__DIR__ . '/data')
+    ]);
+    exit;
+}
+
 declare(strict_types=1);
 
 if (file_exists(__DIR__ . '/includes/config.php')) {
@@ -14,7 +26,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // 1. Handle Auth Redirect (Initialized by visiting /pocketsmith)
 if ($method === 'GET' && !isset($_GET['code']) && !isset($_GET['action'])) {
-    $pck = pocketsmith_generate_pcke();
+    $pck = pocketsmith_generate_pck();
 
     session_start();
     $_SESSION['ps_pke_verifier'] = $pck['verifier'];
@@ -73,7 +85,7 @@ $session = pocketsmith_load_session();
 
 if (!$session) {
     http_response_code(503);
-    echo json_encode(['ok' => false, 'error' => 'Pocketsmith not authenticated']);
+    echo json_encode(['ok' => false, 'error' => 'PocketSmith not authenticated']);
     exit;
 }
 
