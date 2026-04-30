@@ -9,6 +9,11 @@ $config = pocketsmith_get_config();
 $secret = $_GET['secret'] ?? '';
 $action = $_GET['action'] ?? '';
 
+// Pre-flight configuration check
+if (empty($config['developer_key'] ?? '') || empty($config['redirect_uri'] ?? '')) {
+    die("Error: Missing POCKETSMITH_DEVELOPER_KEY or POCKETSMITH_REDIRECT_URI in .env file.");
+}
+
 // 1. Health check (generic)
 if ($action === 'health') {
     header('Content-Type: application/json');
@@ -50,8 +55,8 @@ if (!$allowed) {
 if (isset($_GET['code'])) {
     $sessionData = pocketsmith_load_session();
     $result = pocketsmith_exchange_token(
-        $config['developer_key'],
-        $config['redirect_uri'],
+        $config['developer_key'] ?? '',
+        $config['redirect_uri'] ?? '',
         $_GET['code'],
         $sessionData['code_verifier'] ?? ''
     );
@@ -70,11 +75,16 @@ if (isset($_GET['code'])) {
 if (!empty($action)) {
     $session = pocketsmith_load_session();
     if (empty($session['access_token'])) {
-        $pkce = pocketsmith_generate_pkc();
+        $pkce = pocketsmith_generate_pkce();
         $oauth_state = bin2hex(random_bytes(16));
         $pkce['oauth_state'] = $oauth_state;
         pocketsmith_save_session($pkce);
-        $url = pocketsmith_auth_url($config['developer_key'], $config['redirect_uri'], $pkce['challenge'], $oauth_state);
+        $url = pocketsmith_auth_url(
+            $config['developer_key'] ?? '',
+            $config['redirect_uri'] ?? '',
+            $pkce['challenge'],
+            $oauth_state
+        );
         header("Location: $url");
         exit;
     }
@@ -86,9 +96,14 @@ if (!empty($action)) {
 }
 
 // 5. Default: Start OAuth flow
-$pkce = pocketsmith_generate_pkc();
+$pkce = pocketsmith_generate_pkce();
 $oauth_state = bin2hex(random_bytes(16));
 $pkce['oauth_state'] = $oauth_state;
 pocketsmith_save_session($pkce);
-$url = pocketsmith_auth_url($config['developer_key'], $config['redirect_uri'], $pkce['challenge'], $oauth_state);
+$url = pocketsmith_auth_url(
+    $config['developer_key'] ?? '',
+    $config['redirect_uri'] ?? '',
+    $pkce['challenge'],
+    $oauth_state
+);
 header("Location: $url");
