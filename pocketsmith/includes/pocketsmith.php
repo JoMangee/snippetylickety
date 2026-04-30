@@ -5,37 +5,32 @@ declare(strict_types=1);
  */
 
 function pocketsmith_load_env(string $path): array {
+    $config = [];
     if (!file_exists($path)) {
-        return [];
+        return $config;
     }
     
-    $env = [];
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-        if (ltrim($line, '#') === '') continue;
+        if (strpos(trim($line), '#') === 0) continue;
         if (strpos($line, '=') === false) continue;
-        list($key, $value) = explode('=', $line, 2);
-        $env[trim($key)] = trim($value);
+        list($name, $value) = explode('=', $line, 2);
+        $config[strtolower(str_replace('POCKETSMITH_', '', trim($name)))] = trim($value);
     }
-    return $env;
+    return $config;
 }
 
 function pocketsmith_get_config(): array {
-    $envPath = __DIR__ . '/../.env';
-    $envVars = pocketsmith_load_env($envPath);
+    $config = pocketsmith_load_env(__DIR__ . '/../.env');
     
-    if (!empty($envVars['POCKETSMITH_DEVELOPER_KEY'])) {
-        return [
-            'developer_key' => $envVars['POCKETSMITH_DEVELOPER_KEY'],
-            'redirect_uri' => $envVars['POCKETSMITH_REDIRECT_URI'] ?? '',
-        ];
+    // Merge with config.php values if they exist
+    if (function_exists('app_config')) {
+        $appConfig = app_config();
+        $config['developer_key'] = $config['developer_key'] ?? ($appConfig['pocketsmith_developer_key'] ?? '');
+        $config['redirect_uri'] = $config['redirect_uri'] ?? ($appConfig['pocketsmith_redirect_uri'] ?? '');
     }
     
-    $config = app_config();
-    return [
-        'developer_key' => $config['pocketsmith_developer_key'] ?? '',
-        'redirect_uri' => $config['pocketsmith_redirect_uri'] ?? '',
-    ];
+    return $config;
 }
 
 function pocketsmith_generate_pcke(): array {
