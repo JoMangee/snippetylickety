@@ -1,4 +1,3 @@
-# Deny access to .env files
-<Files "^\.env">
+<Files ".env">
     Require all denied
 </Files>
