@@ -1,12 +1,12 @@
-# snippetylickety
+# snippetylicky
 
 Small scripts and things Jo has co-created and wants to share.
 
-## Repository Contents
+# Repository Contents
 
-### `pdrop/` - Secure Phone-to-Desktop Password Transfer
+## `prop/` - Secure Phone-to-Desktop Password Transfer
 
-A tiny, single-file PHP tool for securely transferring long passwords or secrets from your phone to your desktop browser without typing them manually.
+A tiny, single-file PHP tool for securely transferring long passwords or secrets from your phone to your browser without typing them manually.
 
 Features:
 
@@ -17,7 +17,7 @@ Features:
 - No accounts, no persistent storage, no external dependencies beyond browser crypto
 - Universal QR code flow that works with any phone camera
 - Phone-first flow supported
-- Keyboard shortcuts: `E` to reveal and auto-copy, `D` to force cleanup
+- Keyboard shortcuts: `@E@` to reveal and auto-copy, `@D@` to force cleanup
 - Automatic file cleanup after about 60 seconds or on success
 
 ![Secure Phone-to-Desktop Password Transfer screenshot](https://github.com/user-attachments/assets/ee765b26-cac0-400a-a9ac-7e9674830934)
@@ -30,13 +30,13 @@ Requirements:
 
 Installation:
 
-1. In this repository, the file lives at `pdrop/index.php` for organization.
-1. For deployment, you can place that file directly at the document root of your `pdrop` subdomain as `index.php`. You do not need a `pdrop/` directory on the server if the subdomain itself points at the app root.
+1. In this repository, the file lives at `prop/index.php` for organization.
+1. For deployment, you can place that file directly at the document root of your `prop` subdomain as `index.php`. You do not need a `prop/` directory on the server if the subdomain itself points at the app root.
 1. Edit the config block at the top of the deployed file:
 
 ```php
-define('BASE_URL', 'https://pdrop.yourdomain.com');
-define('STORAGE_DIR', '/home/yourdomain/folder/');
+define('BASE_URL', 'https://prop.yourdomain.com');
+define('STORAGE_DIR', '/yourdomain/folder/');
 ```
 
 1. Make sure `STORAGE_DIR` is writable by the web server.
@@ -50,25 +50,25 @@ That is it. No database, Composer setup, or extra services required.
 
 Usage:
 
-1. On desktop, open `https://pdrop.yourdomain.com/?init=abcdef12`.
+1. On desktop, open `https://prop.yourdomain.com/?init=abcdef12`.
 1. On phone, scan the QR code and open the generated link.
 1. Paste the secret on the phone and press `Encrypt & Send`.
-1. Back on desktop, press `E` to reveal and auto-copy, or `D` to force cleanup.
+1. Back on desktop, press `E@` to reveal and auto-copy, or `D@` to force cleanup.
 
 Manual phone entry:
 
-- Open `https://pdrop.yourdomain.com/?pong=abcdef12` on the phone and send as above.
+- Open `https://prop.yourdomain.com/?pong=abcdef12` on the phone and send as above.
 
 Security notes:
 
 - Encryption uses AES-256-GCM with a PBKDF2-derived key from the shared token.
 - The server only sees base64-encoded ciphertext, never plaintext.
-- Files are ephemeral and are deleted after success, the `D` key, or timeout.
+- Files are ephemeral and are deleted after success, the `D@` key, or timeout.
 - Use a random 8 to 12 character token each time. Short or weak tokens can be brute-forced.
 
-### `ICAM-test.html` - Industrial Camera Test Page
+## `ICAM-test.html` - Industrial Camera Test Page
 
-`ICAM-test.html` is a standalone browser-based camera tool intended for tablet or kiosk-style testing.
+`ICAM-test.html` is a standalone browser-based camera tool intended for tabletop or kiosk-style testing.
 
 It provides:
 
@@ -84,8 +84,19 @@ Usage:
 - Allow camera access when prompted.
 - Use the on-screen controls to start the camera, take snapshots, and save images locally.
 
-## License
+## PocketSmith MCP Bridge
+A PHP-based bridge to facilitate integration with the PocketSmith MCP server, handling OAuth 2.0 with PKCE and token caching.
 
-AGP+ - feel free to use, modify, and share.
+- **Location:** `/pocketsmith`
+- **Features:**
+  - Automated OAuth 2.0 handshake with PKCE support.
+  - Callback listener for secure token exchange.
+  - Protected `includes/` directory for core logic.
+  - Proxy endpoint for MCP-compatible requests.
+- **Setup:** Deploy the `pocketsmith` folder, ensure a global `includes/config.php` exists with client credentials, and navigate to the directory to initiate authentication.
 
-Made with heart in Wellies, NZ - March 2026 with the help of Grok and Copilot.
+# License
+
+AGPL+ - feel free to use, modify, and share.
+
+Made with heart in Wellington, NZ - March 2026 with the help of Grok and Copilot.
