@@ -18,9 +18,16 @@ if ($action === 'health') {
     exit;
 }
 
+// SECURITY: Check secret for all non-health actions
+if ($action !== 'health' && empty($action)) {
+    if ($secret !== ($config['bot_secret'] ?? '')) {
+        die("Unauthorized - Invalid secret");
+    }
+}
+
 if ($action === 'auth' || (empty($action) && !isset($_GET['code']))) {
     if ($secret !== ($config['bot_secret'] ?? '')) {
-        die("Unauthorized");
+        die("Unauthorized - Invalid secret");
     }
     $pkc = pocketsmith_generate_pkc(); // DEFINITIVE: pocketsmith_generate_pkc (not pkce, not pck)
     $auth_state = bin2hex(random_bytes(16));
@@ -66,7 +73,7 @@ if (isset($_GET['code'])) {
 if (!empty($action)) {
     $session = pocketsmith_load_session();
     if (empty($session['access_token'])) {
-        die("Error: No access token found in session. Please visit the auth link again");
+        die("Unauthorized - No access token. Please visit the auth link: https://ps.tinypeople.mesh.net.nz/index.php?secret=eff38ca24cbe699051e47012be1e30340a73fa77e375ad3db1354e68d7aa7022&action=auth");
     }
 
     header('Content-Type: application/json');
