@@ -11,8 +11,8 @@ declare(strict_types=1);
  */
 function pocketsmith_load_env(): array {
     $paths = [
-        SCRIPT_FILENAME . '/includes/.env',
-        SCRIPT_FILENAME . '/.env',
+        $_SERVER['SCRIPT_FILENAME'] . '/includes/.env',
+        $_SERVER['SCRIPT_FILENAME'] . '/.env',
         __DIR__ . '/includes/.env',
     ];
     
@@ -24,12 +24,16 @@ function pocketsmith_load_env(): array {
         }
     }
     
-    if (!$envPath) return [];
+    if (!$envPath) {
+        return [];
+    }
     
     $config = [];
     $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-        if (strpos($line, '=') === false) continue;
+        if (strpos($line, '=') === false) {
+            continue;
+        }
         [$name, $value] = explode('=', $line, 2);
         $config[trim($name)] = trim($value);
     }
@@ -107,7 +111,7 @@ function pocketsmith_exchange_token(string $code): array {
  * No 'tools/call' wrapper. Direct method names only.
  * 
  * @param string $token OAuth access token
- * @param string $method Method name (e.g. 'accounts.list', 'get_current_user', 'tools.list')
+ * @param string $method Method name (e.g. 'accounts.list', 'user.get', 'tools.list')
  * @param array $params Method parameters
  * @param bool $raw Return raw response string instead of parsed JSON
  * @return array
@@ -115,7 +119,7 @@ function pocketsmith_exchange_token(string $code): array {
 function pocketsmith_mcp_request(string $token, string $method, array $params = [], bool $raw = false): array {
     $payload = json_encode([
         'jsonrpc' => '2.0',
-        'method' => $method, // Method name used DIRECTLY
+        'method' => $method,
         'params' => (object)$params,
         'id' => uniqid(),
     ]);
@@ -137,7 +141,7 @@ function pocketsmith_mcp_request(string $token, string $method, array $params = 
     curl_close($ch);
     
     if ($response === false) {
-        return ['ok' => false, 'error' => $error];
+        return ['status' => 0, 'error' => $error];
     }
     
     if ($raw) {
