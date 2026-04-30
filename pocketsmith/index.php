@@ -91,11 +91,11 @@ if (isset($_GET['code'])) {
         );
         $accessToken = $result['session']['access_token'] ?? $result['access_token'] ?? null;
         $refreshToken = $result['session']['refresh_token'] ?? $result['refresh_token'] ?? null;
-        if ($accessToken) {
-            $sessionData['access_token'] = $accessToken;
-            if ($refreshToken) {
+        if ($accessToken)
+            $sessionData['access_token'] = $accessToken; 
+            if ($refreshToken)
                 $sessionData['refresh_token'] = $refreshToken;
-            }
+            
             pocketsmith_save_session($sessionData);
             echo 'Authenticated!';
         } else {
@@ -124,6 +124,49 @@ if (!empty($action)) {
         );
         header("Location: " . $url);
         exit;
+    }
+    
+    // Handle action=me to get user_id
+    if ($action === 'me') {
+        $result = pocketsmith_mcp_request($config['developer_key'], 'me');
+        if (isset($result['result'])) {
+            $me_result = $result['result'];
+            if (is_array($me_result) && isset($me_result['id'])) {
+                $user_id = $me_result['id'];
+                // Store in session for later use
+                $pkc['user_id'] = $user_id;
+                pocketsmith_save_session($pkc);
+                header('Content-Type: application/json');
+                echo json_encode(['ok' => true, 'user_id' => $user_id]);
+                exit;
+            }
+        }
+        header('Content-Type: application/json');
+        echo json_encode(['ok' => false, 'error' => 'Failed to get user info']);
+        exit;
+    }
+    
+    // Handle action=accounts with stored user_id
+    if ($action === 'accounts') {
+        $user_id = $pkc['user_id'] ?? null;
+        if (!$user_id && isset($_GET['user_id'])) {
+            $user_id = $_GET['user_id'];
+        }
+        
+        if ($user_id) {
+            $result = pocketsmith_mcp_request($config['developer_key'], 'list_accounts', ['userId' => $user_id]);
+            header('Content-Type: application/json');
+            if (isset($result['result'])) {
+                echo json_encode($result['result']);
+            } else {
+                echo json_encode($result);
+            }
+            exit;
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'error' => 'No user_id available. Call action=me first to get user_id.']);
+            exit;
+        }
     }
     
     $result = pocketsmith_mcp_request($session['access_token'], $action);
