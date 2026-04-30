@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * PocketSmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
+ * Pocketsmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
  */
 
 function pocketsmith_load_env(string $path): array {
@@ -18,7 +18,7 @@ function pocketsmith_load_env(string $path): array {
         
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
-        $value = trim($value, " \t\n\r\0\x0B\"");  
+        $value = trim($value, " \t\n\r\x0B\"");  
         
         $lowerKey = strtolower($name);
         $config[$lowerKey] = $value;
@@ -88,14 +88,46 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
     return ['ok' => true, 'session' => $decoded];
 }
 
-function pocketsmith_mcp_request(string $token, string $tool, array $params = []): array {
+function pocketsmith_mcp_request(string $token, string $method, array $params = [], bool $raw = false): array {
+    // If method is a direct tool name (not 'tools/call' or 'list_tools'), wrap it
+    if ($method !== 'tools/call' && $method !== 'tools/list' && !str_starts_with($method, 'tools/')) {
+        // Wrap as tools/call
+        $method = 'tools/call';
+        $params = [
+            'name' => $method,
+            'arguments' => (object)$params
+        ];
+    }
+    
     $payload = json_encode([
         'jsonrpc' => '2.0',
-        'method' => $tool,
+        'method' => $method,
         'params' => (object)$params,
         'id' => uniqid()
     ]);
-
+    
+    if ($raw) {
+        // For debug mode, return the payload and response as strings
+        $ch = curl_init("https://mcp-readonly.pocketsmith.com/mcp");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Accept: application/json, text/event-stream',
+            'Authorization: Bearer ' . $token
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+        
+        return ['status' => $httpCode, 'response' => $response, 'payload' => $payload, 'error' => $error];
+    }
+    
+    // Standard mode: parse JSON response
     $ch = curl_init("https://mcp-readonly.pocketsmith.com/mcp");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
@@ -111,7 +143,7 @@ function pocketsmith_mcp_request(string $token, string $tool, array $params = []
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $error = curl_error($ch);
     curl_close($ch);
-
+    
     if ($response === false) return ['ok' => false, 'error' => $error];
     return ['status' => $httpCode, 'response' => json_decode($response, true)];
 }
