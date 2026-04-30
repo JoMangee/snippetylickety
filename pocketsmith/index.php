@@ -62,30 +62,42 @@ if ($method === 'GET' && isset($_GET['code'])) {
 }
 
 // 3. Handle API Proxy
-$secret = bin2hex(random_bytes(32));
-$inputSecret = '';
+try {
+    // Main API proxy logic wrapped in try-catch for error handling
+    $secret = bin2hex(random_bytes(32));
+    $inputSecret = '';
 
-if ($method === 'POST') {
-    $body = json_decode((string)file_get_contents('php://input'), true);
-    $inputSecret = (string)($body['secret'] ?? '');
-} else {
-    $inputSecret = (string)$_GET['secret'] ?? '';
+    if ($method === 'POST') {
+        $body = json_decode((string)file_get_contents('php://input'), true);
+        $inputSecret = (string)($body['secret'] ?? '');
+    } else {
+        $inputSecret = (string)$_GET['secret'] ?? '';
+    }
+
+    if ($secret === '' || !hash_equals($secret, $inputSecret)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Forbidden']);
+        exit;
+    }
+
+    $action = (string)$_GET['action'] ?? 'summary';
+    $session = pocketsmith_load_session();
+
+    if (!$session) {
+        http_response_code(503);
+        echo json_encode(['ok' => false, 'error' => 'PocketSmith not authenticated']);
+        exit;
+    }
+
+    $result = pocketsmith_mcpc_request($session['access_token'], $action);
+    echo json_encode($result);
+} catch (\Throwable $e) {
+    http_response_code(500);
+    echo json_encode([
+        'ok' => false,
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'code' => $e->getCode()
+    ]);
 }
-
-if ($secret === '' || !hash_equals($secret, $inputSecret)) {
-    http_response_code(403);
-    echo json_encode(['ok' => false, 'error' => 'Forbidden']);
-    exit;
-}
-
-$action = (string)$_GET['action'] ?? 'summary';
-$session = pocketsmith_load_session();
-
-if (!$session) {
-    http_response_code(503);
-    echo json_encode(['ok' => false, 'error' => 'PocketSmith not authenticated']);
-    exit;
-}
-
-$result = pocketsmith_mcp_request($session['access_token'], $action);
-echo json_encode($result);
