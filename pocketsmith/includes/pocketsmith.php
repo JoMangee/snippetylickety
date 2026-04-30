@@ -8,13 +8,17 @@ declare(strict_types=1);
 
 /**
  * Load environment variables from .env file
+ * Enhanced to work from both index.php and test_pocketsmith.php locations
  */
 function pocketsmith_load_env(): array {
-    $paths = [
-        $_SERVER['SCRIPT_FILENAME'] . '/includes/.env',
-        $_SERVER['SCRIPT_FILENAME'] . '/.env',
-        __DIR__ . '/includes/.env',
-    ];
+    // Primary path: .env in the parent directory (works for both index.php and test_pocketsmith.php)
+    $parentEnv = __DIR__ . '/../.env';
+    
+    // Fallback paths
+    $scriptEnv = $_SERVER['SCRIPT_FILENAME'] . '/../.env';
+    $includedEnv = __DIR__ . '/includes/.env';
+    
+    $paths = [$parentEnv, $scriptEnv, $includedEnv];
     
     $envPath = null;
     foreach ($paths as $path) {
@@ -162,7 +166,7 @@ function pocketsmith_save_session(array $session): void {
 }
 
 /**
- * Load session from temp directory
+ * Load session to temp directory
  */
 function pocketsmith_load_session(): array {
     $dir = sys_get_temp_dir();
