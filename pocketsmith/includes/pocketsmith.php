@@ -1,7 +1,8 @@
+<?php
 declare(strict_types=1);
 
 /**
- * Pocketsmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
+ * PocketSmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
  */
 
 function pocketsmith_load_env(string $path): array {
@@ -15,7 +16,7 @@ function pocketsmith_load_env(string $path): array {
         if (strpos(trim($line), '#') === 0) continue;
         if (strpos($line, '=') === false) continue;
         list($name, $value) = explode('=', $line, 2);
-        $config[strtolower(str_replace('POCKETSMITH_', '', trim($name)))] = trim($value);
+        $config[strtolower(str_replace('POCKETS_', '', trim($name)))] = trim($value);
     }
     return $config;
 }
@@ -33,7 +34,7 @@ function pocketsmith_get_config(): array {
     return $config;
 }
 
-function pocketsmith_generate_pcke(): array {
+function pocketsmith_generate_pck(): array {
     $verifier = bin2hex(random_bytes(32));
     $challenge = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(hash('sha256', $verifier, true)));
     return ['verifier' => $verifier, 'challenge' => $challenge];
