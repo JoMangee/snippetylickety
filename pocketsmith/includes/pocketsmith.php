@@ -20,24 +20,29 @@ function pocketsmith_load_env(string $path): array {
         $name = trim($name);
         $value = trim($value, " \t\n\r\0\x0B\"'"); 
         
+        // Normalize key: lowercase
         $lowerKey = strtolower($name);
         $config[$lowerKey] = $value;
         
-        // Also store without the POCKETSMITH_ prefix for easy access
+        // Also store without POCKETSMITH_ prefix (handles POCKETS smith_, pocketsmith_, etc.)
         $noPrefix = str_replace('pocketsmith_', '', $lowerKey);
         $config[$noPrefix] = $value;
+        
+        // Also try without any prefix variations
+        $alternate = strtolower(str_replace('POCKETSMITH_', '', $name));
+        $config[trim($alternate)] = $value;
     }
     return $config;
 }
 
 function pocketsmith_get_config(): array {
-    $envPath = dirname(__DIR__) . '/.env';
+    $envPath = dirname(__DIR__) . '/../.env';
     return pocketsmith_load_env($envPath);
 }
 
-function pocketsmith_generate_pkc(): array {
+function pocketsmith_generate_pkce(): array {
     $verifier = bin2hex(random_bytes(32));
-    $challenge = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(hash('sha256', $verifier, true)));
+    $challenge = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(hash('SHA256', $verifier, true)));
     return ['verifier' => $verifier, 'challenge' => $challenge];
 }
 
