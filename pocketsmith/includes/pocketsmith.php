@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Pocketsmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
+ * PocketSmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
  */
 
 function pocketsmith_load_env(string $path): array {
@@ -13,7 +13,7 @@ function pocketsmith_load_env(string $path): array {
     
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) continue;
+        if (strpos(ltrim($line), '#') === 0) continue;
         if (strpos($line, '=') === false) continue;
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
@@ -46,7 +46,7 @@ function pocketsmith_generate_pkce(): array {
 }
 
 function pocketsmith_auth_url(string $developerKey, string $redirectUri, string $challenge): string {
-    return 'https://mcps-readonly.pocketsmith.com/oauth/authorize?' . http_build_query([
+    return 'https://mcp-readonly.pocketsmith.com/oauth/authorize?' . http_build_query([
         'client_id' => $developerKey,
         'redirect_uri' => $redirectUri,
         'response_type' => 'code',
@@ -65,7 +65,7 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
         'code_verifier' => $verifier
     ];
 
-    $ch = curl_init('https://mcps-readonly.pocketsmith.com/oauth/token');
+    $ch = curl_init('https://mcp-readonly.pocketsmith.com/oauth/token');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
@@ -82,7 +82,7 @@ function pocketsmith_exchange_token(string $developerKey, string $redirectUri, s
 }
 
 function pocketsmith_mcp_request(string $token, string $action): array {
-    $url = 'https://mcps-readonly.pocketsmith.com/mcp';
+    $url = 'https://mcp-readonly.pocketsmith.com/mcp';
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token", "Accept: application/json"]);
