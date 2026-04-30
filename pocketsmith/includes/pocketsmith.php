@@ -50,7 +50,7 @@ function pocketsmith_get_config(): array {
 
 /**
  * Generate PKCE verifier and challenge
- * DEFINITIVE NAME: pocketsmith_generate_pkc (not pkce, not pck)
+ * DEFINITIVE NAME: pocketsmith_generate_pkc (NOT pkce, NOT pck)
  */
 function pocketsmith_generate_pkc(): array {
     $verifier = bin2hex(random_bytes(32));
@@ -101,21 +101,21 @@ function pocketsmith_exchange_token(string $code): array {
 }
 
 /**
- * Make MCP request to PocketSmith
+ * Make MCP request to PocketSmith MCP-readonly endpoint
  * 
- * CRITICAL: The tool/name is used DIRECTLY as the JSON-RPC method field.
- * No 'tools/call' wrapper. PocketSmith MCP-readonly uses raw method names.
+ * CRITICAL: Method name is used DIRECTLY as JSON-RPC method field.
+ * No 'tools/call' wrapper. Direct method names only.
  * 
  * @param string $token OAuth access token
- * @param string $tool Tool name used directly as JSON-RPC method
+ * @param string $method Method name (e.g. 'accounts.list', 'get_current_user', 'tools.list')
  * @param array $params Method parameters
- * @param bool $raw Return raw response instead of parsed JSON
+ * @param bool $raw Return raw response string instead of parsed JSON
  * @return array
  */
-function pocketsmith_mcp_request(string $token, string $tool, array $params = [], bool $raw = false): array {
+function pocketsmith_mcp_request(string $token, string $method, array $params = [], bool $raw = false): array {
     $payload = json_encode([
         'jsonrpc' => '2.0',
-        'method' => $tool, // Tool name used DIRECTLY as method
+        'method' => $method, // Method name used DIRECTLY
         'params' => (object)$params,
         'id' => uniqid(),
     ]);
