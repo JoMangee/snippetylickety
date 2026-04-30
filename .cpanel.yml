@@ -1,8 +1,5 @@
-version: 1
-
-build: ~
-
-deploy:
-  pocketsmith:
-    - description: "Copy PocketSmith files to server"
-      command: "cp -r pocketsmith/* /home2/meshnet/pocketsmith/"
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home2/meshnet/pocketsmith/
+    - /bin/cp -r pocketsmith/* $DEPLOYPATH
