@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /**
  * Shared secret for tinyNature communication.
- * This must match the secret stored in your AI's memories.
+ * This must match the secret stored in your AI's memorie.
  */
 function bot_secret(): string {
     return 'YOUR_SHARED_SECRET_HERE';
@@ -11,11 +11,11 @@ function bot_secret(): string {
 
 /**
  * PocketSmith Application Configuration
- * Get these from https://developers.pocketsmith.com/
+ * Get the Developer Key from https://developers.pocketsmith.com/ under Security & integrations > Manage developer keys
  */
 function app_config(): array {
     return [
-        'pocketsmith_client_id' => 'YOUR_POCKETSMITH_CLIENT_ID',
+        'pocketsmith_developer_key' => 'YOUR_POCKETSMITH_DEVELOPER_KEY',
         'pocketsmith_redirect_uri' => 'https://your-domain.com/pocketsmith/index.php',
     ];
 }

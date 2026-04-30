@@ -1,4 +1,4 @@
-# snippetylicky
+# snippetylickety
 
 Small scripts and things Jo has co-created and wants to share.
 
@@ -6,7 +6,7 @@ Small scripts and things Jo has co-created and wants to share.
 
 ## `prop/` - Secure Phone-to-Desktop Password Transfer
 
-A tiny, single-file PHP tool for securely transfring long passwords or secrets from your phone to your browser without typing them manually.
+A tiny, single-file PHP tool for securely transferring long passwords or secrets from your phone to your browser without typing them manually.
 
 Features:
 
@@ -68,7 +68,7 @@ Security notes:
 
 ## `ICAM-test.html` - Industrial Camera Test Page
 
-`ICAM-test.html` is a standalone browser-based camera tool intended for tablet or kiosk-style testing.
+`ICAM-test.html` is a standalone browser-based camera tool intended for tablet or kiiosk-style testing.
 
 It provides:
 
@@ -84,7 +84,7 @@ Usage:
 - Allow camera access when prompted.
 - Use the on-screen controls to start the camera, take snapshots, and save images locally.
 
-## PocketSmith MCP Bridge
+# PocketSmith MCP Bridge
 
 A PHP-based bridge to facilitate integration with the PocketSmith MCP server, handling OAuth 2.0 with PKCE and token caching.
 
@@ -94,9 +94,13 @@ A PHP-based bridge to facilitate integration with the PocketSmith MCP server, ha
   - Callback listener for secure token exchange.
   - Protected `includes/` directory for core logic.
   - Proxy endpoint for MCP-compatible requests.
-- **Setup:** Deploy the `pocketsmith` folder, ensure a global `includes/config.php` exists with client credentials, and navigate to the directory to initiate authentication.
+- **Setup:** Deploy the `pocketsmith` folder, ensure a global `includes/config.php` exists with Developer Key credentials, and navigate to the directory to initiate authentication.
 
-# License
+These are found in PocketSmith under **Security & integrations > Manage developer keys**
+
+⚠️ **Security Warning:** These are powerful keys and should never be shared or pasted into a website (only into the server-side config).
+
+License
 
 AGPL+ - feel free to use, modify, and share.
 

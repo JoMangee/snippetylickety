@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/includes/pocketsmith.php';
+require_once __DIR__ . '/../includes/pocketsmith.php';
 
 header('Content-Type: application/json');
 
@@ -17,7 +17,7 @@ if ($method === 'GET' && !isset($_GET['code']) && !isset($_GET['action'])) {
     $_SESSION['ps_pcke_verifier'] = $pcke['verifier'];
 
     $authUrl = pocketsmith_auth_url(
-        $config['pocketsmith_client_id'],
+        $config['pocketsmith_developer_key'],
         $config['pocketsmith_redirect_uri'],
         $pcke['challenge']
     );
@@ -33,7 +33,7 @@ if ($method === 'GET' && isset($_GET['code'])) {
     $config = app_config();
 
     $result = pocketsmith_exchange_token(
-        $config['pocketsmith_client_id'],
+        $config['pocketsmith_developer_key'],
         $config['pocketsmith_redirect_uri'],
         (string)$_GET['code'],
         $verifier
