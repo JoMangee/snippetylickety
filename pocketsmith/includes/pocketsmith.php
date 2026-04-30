@@ -50,7 +50,7 @@ function pocketsmith_get_config(): array {
 
 /**
  * Generate PKCE verifier and challenge
- * DEFINITIVE NAME: pocketsmith_generate_pkc
+ * DEFINITIVE NAME: pocketsmith_generate_pkc (not pkce, not pck)
  */
 function pocketsmith_generate_pkc(): array {
     $verifier = bin2hex(random_bytes(32));
@@ -63,12 +63,12 @@ function pocketsmith_generate_pkc(): array {
  */
 function pocketsmith_auth_url(): string {
     $config = pocketsmith_get_config();
-    $pkce = pocketsmith_generate_pkc();
+    $pkc = pocketsmith_generate_pkc();
     $params = [
         'client_id' => $config['developer_key'],
         'redirect_uri' => $config['redirect_uri'],
         'response_type' => 'code',
-        'code_challenge' => $pkce['challenge'],
+        'code_challenge' => $pkc['challenge'],
         'code_challenge_method' => 'S256',
         'mode' => 'readonly',
         'state' => bin2hex(random_bytes(16)),
@@ -103,38 +103,20 @@ function pocketsmith_exchange_token(string $code): array {
 /**
  * Make MCP request to PocketSmith
  * 
+ * CRITICAL: The tool/name is used DIRECTLY as the JSON-RPC method field.
+ * No 'tools/call' wrapper. PocketSmith MCP-readonly uses raw method names.
+ * 
  * @param string $token OAuth access token
- * @param string $method Method name ('list_accounts', 'get_current_user', 'tools/list', 'tools/call')
+ * @param string $tool Tool name used directly as JSON-RPC method
  * @param array $params Method parameters
  * @param bool $raw Return raw response instead of parsed JSON
  * @return array
  */
-function pocketsmith_mcp_request(string $token, string $method, array $params = [], bool $raw = false): array {
-    // Build MCP payload according to PocketSmith MCP spec
-    if ($method === 'tools/list' || $method === 'tools/call') {
-        // Direct MCP method - use params as-is
-        $mcpMethod = $method;
-        $mcpParams = (object)($params['name'] ?? array_key_exists('name', $params) ? [] : $params);
-        
-        if ($method === 'tools/call' && !isset($params['name'])) {
-            // If calling a tool directly, wrap it
-            $mcpParams = (object)['name' => $method, 'arguments' => (object)$params];
-        }
-    } else {
-        // Direct tool name - wrap as tools/call
-        $mcpMethod = 'tools/call';
-        $mcpParams = (object)['name' => $method, 'arguments' => (object)$params];
-    }
-    
-    // Special case: tools/list gets no name wrapper
-    if ($method === 'tools/list') {
-        $mcpParams = (object)['name' => 'list_tools', 'arguments' => (object)$params];
-    }
-    
+function pocketsmith_mcp_request(string $token, string $tool, array $params = [], bool $raw = false): array {
     $payload = json_encode([
         'jsonrpc' => '2.0',
-        'method' => $mcpMethod,
-        'params' => $mcpParams,
+        'method' => $tool, // Tool name used DIRECTLY as method
+        'params' => (object)$params,
         'id' => uniqid(),
     ]);
     
