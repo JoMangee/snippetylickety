@@ -15,10 +15,10 @@ if ($action === 'health') {
 
 if ($action === 'auth' || (empty($action) && !isset($_GET['code']))) {
     if ($secret !== ($config['bot_secret'] ?? '')) die("Unauthorized");
-    $pkc = pocketsmith_generate_pkc();
+    $pck = pocketsmith_generate_pck();
     $auth_state = bin2hex(random_bytes(16));
-    pocketsmith_save_session(['verifier' => $pkc['verifier'], 'state' => $auth_state]);
-    $params = ['client_id' => $config['developer_key'], 'redirect_uri' => $config['redirect_uri'], 'response_type' => 'code', 'code_challenge' => $pkc['challenge'], 'code_challenge_method' => 'S256', 'mode' => 'readonly', 'state' => $auth_state];
+    pocketsmith_save_session(['verifier' => $pck['verifier'], 'state' => $auth_state]);
+    $params = ['client_id' => $config['developer_key'], 'redirect_uri' => $config['redirect_uri'], 'response_type' => 'code', 'code_challenge' => $pck['challenge'], 'code_challenge_method' => 'S256', 'mode' => 'readonly', 'state' => $auth_state];
     header("Location: https://mcp-readonly.pocketsmith.com/oauth/authorize?" . http_build_query($params));
     exit;
 }
@@ -44,16 +44,16 @@ if (isset($_GET['code'])) {
 
 if (!empty($action)) {
     $session = pocketsmith_load_session();
-    if (empty($session['access_token'])) die("Unauthorized - Please authenticate first");
+    if (empty($session['access_token'])) die("Unauthorized");
+
     header('Content-Type: application/json');
-    if ($action === 'list_tools') {
-        echo json_encode(pocketsmith_mcp_request($session['access_token'], 'tools/list'));
-    } elseif ($action === 'me') {
-        echo json_encode(pocketsmith_mcp_request($session['access_token'], 'tools/call', ['name' => 'get_current_user', 'arguments' => (object)[]]));
-    } else {
-        $args = (isset($_GET['user_id'])) ? ['user_id' => (int)$_GET['user_id']] : [];
-        $toolName = ($action === 'accounts') ? 'list_accounts' : $action;
-        echo json_encode(pocketsmith_mcp_request($session['access_token'], 'tools/call', ['name' => $toolName, 'arguments' => (object)$args]));
-    }
+    
+    // Map 'accounts' to 'list_accounts'
+    $tool = ($action === 'accounts') ? 'list_accounts' : $action;
+    if ($action === 'me') $tool = 'get_current_user';
+    
+    $args = (isset($_GET['user_id'])) ? ['user_id' => (int)$_GET['user_id']] : [];
+    
+    echo json_encode(pocketsmith_mcp_request($session['access_token'], $tool, $args));
     exit;
 }
