@@ -18,7 +18,7 @@ function pocketsmith_load_env(string $path): array {
         
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
-        $value = trim($value, " \t\n\r\0\x0B\"'"); 
+        $value = trim($value, " \t\n\r\0\x0B\""); 
         
         $lowerKey = strtolower($name);
         $config[$lowerKey] = $value;
@@ -110,6 +110,7 @@ function pocketsmith_mcp_request(string $token, string $action): array {
     curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Content-Type: application/json',
+        'Accept: application/json, text/event-stream',
         'Authorization: Bearer ' . $token
     ]);
     // Add a timeout and follow redirects
@@ -126,7 +127,7 @@ function pocketsmith_mcp_request(string $token, string $action): array {
         return [
             'ok' => false,
             'status' => $httpCode,
-            'error' => 'cURL Error: ' . $error,
+            'error' => ' CURL Error: ' . $error,
             'raw' => null
         ];
     }
