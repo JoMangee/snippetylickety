@@ -55,7 +55,7 @@ if (!empty($action)) {
     if (empty($session['access_token'])) {
         $pkce = pocketsmith_generate_pkce();
         pocketsmith_save_session($pkce);
-        $url = pocketsmith_auth_url($config['developer_key'], $config['redirect_uri'], $pkce['code_challenge']);
+        $url = pocketsmith_auth_url($config['developer_key'], $config['redirect_uri'], $pkce['challenge']);
         header("Location: $url");
         exit;
     }
@@ -69,5 +69,5 @@ if (!empty($action)) {
 // 5. Default: Start OAuth flow
 $pkce = pocketsmith_generate_pkce();
 pocketsmith_save_session($pkce);
-$url = pocketsmith_auth_url($config['developer_key'], $config['developer_key'], $pkce['code_challenge']);
+$url = pocketsmith_auth_url($config['developer_key'], $config['redirect_uri'], $pkce['challenge']);
 header("Location: $url");
