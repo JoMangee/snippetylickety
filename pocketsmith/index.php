@@ -3,7 +3,9 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 $includePath = __DIR__ . '/includes/pocketsmith.php';
-if (!file_exists($includePath)) die("Missing includes");
+if (!file_exists($includePath)) {
+    die("Missing includes");
+}
 require_once $includePath;
 
 $config = pocketsmith_get_config();
@@ -17,7 +19,9 @@ if ($action === 'health') {
 }
 
 if ($action === 'auth' || (empty($action) && !isset($_GET['code']))) {
-    if ($secret !== ($config['bot_secret'] ?? '')) die("Unauthorized");
+    if ($secret !== ($config['bot_secret'] ?? '')) {
+        die("Unauthorized");
+    }
     $pkc = pocketsmith_generate_pkc(); // DEFINITIVE: pocketsmith_generate_pkc (not pkce, not pck)
     $auth_state = bin2hex(random_bytes(16));
     pocketsmith_save_session(['verifier' => $pkc['verifier'], 'state' => $auth_state]);
@@ -62,7 +66,7 @@ if (isset($_GET['code'])) {
 if (!empty($action)) {
     $session = pocketsmith_load_session();
     if (empty($session['access_token'])) {
-        die("Error: No access token found in session. Please visit the auth link again: https://ps.tinypeople.mesh.net.nz/index.php?secret=eff38ca24cbe699051e47012be1e30340a73fa77e375ad3db1354e68d7aa7022&action=auth");
+        die("Error: No access token found in session. Please visit the auth link again");
     }
 
     header('Content-Type: application/json');
@@ -79,7 +83,9 @@ if (!empty($action)) {
         } else {
             // Map actions to official dot-notation methods
             $method = ($action === 'accounts') ? 'accounts.list' : $action;
-            if ($action === 'me') $method = 'user.get';
+            if ($action === 'me') {
+                $method = 'user.get';
+            }
             $args = (isset($_GET['user_id'])) ? ['user_id' => (int)$_GET['user_id']] : [];
         }
         
