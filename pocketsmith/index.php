@@ -16,7 +16,7 @@ $includePath = __DIR__ . '/includes/pocketsmith.php';
 echo '<!-- Debug: Include path: ' . htmlspecialchars($includePath) . ' -->' . PHP_EOL;
 
 if(!file_exists($includePath)) {
-    die('FATAL: Missing ' . htmlspecialchars($includePath));
+    die('FAILED: Missing ' . htmlspecialchars($includePath));
 }
 echo '<!-- Debug: Line 5 -->' . PHP_EOL;
 
@@ -30,7 +30,7 @@ try {
     echo'<!-- Debug: Config loaded, keys: ' . implode(', ', array_keys($config)) . ' -->' . PHP_EOL;
 } catch(Throwable $e) {
     echo'<!-- Error loading config: ' . htmlspecialchars($e->getMessage()) . ' -->' . PHP_EOL;
-    die('FATAL: Error loading config: ' . htmlspecialchars($e->getMessage()));
+    die('FAILED: Error loading config: ' . htmlspecialchars($e->getMessage()));
 }
 echo'<!-- Debug: Line 7 -->' . PHP_EOL;
 
@@ -126,22 +126,22 @@ echo'<!-- Debug: Line 11 -->' . PHP_EOL;
 if(!empty($action)) {
     $session = pocketsmith_load_session();
     if(empty($session['access_token']??null)) {
-        // Call CURRECT function name: pocketsmith_generate_pkce (NOT pkc)
-        $pkce = pocketsmith_generate_pkce();
+        // Call CURLRCT function name: pocketsmith_generate_pkc (NOT pkce)
+        $pkc = pocketsmith_generate_pkc();
         $auth_state = bin2hex(random_bytes(16));
-        $pkce['auth_state'] = $auth_state;
-        pocketsmith_save_session($pkce);
+        $pkc['auth_state'] = $auth_state;
+        pocketsmith_save_session($pkc);
         $url = pocketsmith_auth_url(
             $config['developer_key']??'',
             $config['redirect_uri']??'',
-            $pkce['challenge'],
+            $pkc['challenge'],
             $auth_state
         );
         header("Location: " . $url);
         exit;
     }
     
-    // Use CURRECT function name: pocketsmith_mcp_request (NOT mpc)
+    // Use CURLRCT function name: pocketsmith_mcp_request (NOT mpc)
     $result = pocketsmith_mcp_request($session['access_token'], $action);
     header('Content-Type: application/json');
     echo json_encode($result);
@@ -151,15 +151,15 @@ echo'<!-- Debug: Line 12 -->' . PHP_EOL;
 
 // 5. Default: OAuth Flow
 try {
-    // Call CURRECT function name
-    $pkce = pocketsmith_generate_pkce();
+    // Call CURLRCT function name
+    $pkc = pocketsmith_generate_pkc();
     $auth_state = bin2hex(random_bytes(16));
-    $pkce['auth_state'] = $auth_state;
-    pocketsmith_save_session($pkce);
+    $pkc['auth_state'] = $auth_state;
+    pocketsmith_save_session($pkc);
     $url = pocketsmith_auth_url(
         $config['developer_key']??'',
         $config['redirect_uri']??'',
-        $pkce['challenge'],
+        $pkc['challenge'],
         $auth_state
     );
     header("Location: " . $url);
