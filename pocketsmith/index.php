@@ -25,8 +25,7 @@ if ($action !== 'health' && empty($action)) {
         die(json_encode([
             'error' => 'Unauthorized - Invalid secret',
             'keys_found' => array_keys($config),
-            'secret_provided_length' => strlen($secret),
-            'provided_secret' => $secret
+            'secret_provided_length' => strlen($secret)
         ]));
     }
 }
@@ -37,8 +36,7 @@ if ($action === 'auth' || (empty($action) && !isset($_GET['code']))) {
         die(json_encode([
             'error' => 'Unauthorized - Invalid secret',
             'keys_found' => array_keys($config),
-            'secret_provided_length' => strlen($secret),
-            'provided_secret' => $secret
+            'secret_provided_length' => strlen($secret)
         ]));
     }
     $pkc = pocketsmith_generate_pkc(); // DEFINITIVE: pocketsmith_generate_pkc (not pkce, not pck)
