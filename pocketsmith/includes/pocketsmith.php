@@ -12,13 +12,20 @@ function pocketsmith_load_env(string $path): array {
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     $config = [];
     foreach ($lines as $line) {
-        if (strpos(ltrim($line), '#') === 0) continue;
+        $line = trim($line);
+        if (empty($line) || strpos($line, '#') === 0) continue;
         if (strpos($line, '=') === false) continue;
+        
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
-        $value = trim($value, " \t\n\r\0\x0B\'");
-        $cleanKey = strtolower(str_replace('POCKETSМИTH_', '', $name));
-        $config[$cleanKey] = $value;
+        $value = trim($value, " \t\n\r\0\x0B\"'"); 
+        
+        $lowerKey = strtolower($name);
+        $config[$lowerKey] = $value;
+        
+        // Also store without the POCKETSMITH_ prefix for easy access
+        $noPrefix = str_replace('pocketsmith_', '', $lowerKey);
+        $config[$noPrefix] = $value;
     }
     return $config;
 }
@@ -87,12 +94,13 @@ function pocketsmith_mcp_request(string $token, string $action): array {
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $requestBody);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Authorization: Bearer ' . $token,
+        'Authorization: Basic ' . base64_encode($token . ':'),
         'Content-Type: application/json',
         'Accept: application/json'
     ]);
     
     $response = curl_exec($ch);
+    curl_close($ch);
     
     $decoded = json_decode($response, true);
     
