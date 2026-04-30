@@ -12,7 +12,12 @@ $action = $_GET['action'] ?? '';
 // 1. Health check (generic)
 if ($action === 'health') {
     header('Content-Type: application/json');
-    echo json_encode(['status' => 'operational']);
+    echo json_encode([
+        'status' => 'operational',
+        'env_loaded' => !empty($config),
+        'secret_set' => !empty($config['bot_secret'] ?? ''),
+        'keys' => array_keys($config)
+    ]);
     exit;
 }
 
@@ -48,7 +53,7 @@ if (isset($_GET['code'])) {
 if (!empty($action)) {
     $session = pocketsmith_load_session();
     if (empty($session['access_token'])) {
-        $pkce = pocketsmith_generate_pkc();
+        $pkce = pocketsmith_generate_pkce();
         pocketsmith_save_session($pkce);
         $url = pocketsmith_auth_url($config['developer_key'], $config['redirect_uri'], $pkce['code_challenge']);
         header("Location: $url");
@@ -62,7 +67,7 @@ if (!empty($action)) {
 }
 
 // 5. Default: Start OAuth flow
-$pkce = pocketsmith_generate_pkc();
+$pkce = pocketsmith_generate_pkce();
 pocketsmith_save_session($pkce);
 $url = pocketsmith_auth_url($config['developer_key'], $config['developer_key'], $pkce['code_challenge']);
 header("Location: $url");
