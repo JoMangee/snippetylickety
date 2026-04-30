@@ -8,9 +8,9 @@ declare(strict_types=1);
 
 /**
  * Load environment variables from .env file
- * Enhanced to work from both index.php and test_pocketsmith.php locations
+ * Improved: Supports export prefix, inline comments, and key normalization
  */
-function pocketsmith_load_env(): array {
+function pocketsmith_load_env_from_all_paths(): array {
     // Primary path: .env in the parent directory (works for both index.php and test_pocketsmith.php)
     $parentEnv = __DIR__ . '/../.env';
     
@@ -32,28 +32,74 @@ function pocketsmith_load_env(): array {
         return [];
     }
     
+    return pocketsmith_load_env($envPath);
+}
+
+/**
+ * Load environment variables from .env file
+ * Improved: Supports export prefix, inline comments, and key normalization
+ * 
+ * @param string $path Path to the .env file
+ * @return array Normalized environment config
+ */
+function pocketsmith_load_env(string $path): array {
+    if (!file_exists($path)) {
+        return [];
+    }
+    
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     $config = [];
-    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    
     foreach ($lines as $line) {
+        $line = trim($line);
+        
+        // Skip empty lines and comments
+        if (empty($line) || strpos($line, '#') === 0) {
+            continue;
+        }
+        
         if (strpos($line, '=') === false) {
             continue;
         }
-        [$name, $value] = explode('=', $line, 2);
-        $config[trim($name)] = trim($value);
+        
+        // Handle "export " prefix
+        if (stripos($line, 'export ') === 0) {
+            $line = substr($line, 7);
+            $line = trim($line);
+        }
+        
+        // Handle inline comments (e.g., "KEY=value # comment")
+        if (strpos($line, ' #') !== false) {
+            $line = explode(' #', $line)[0];
+            $line = trim($line);
+        }
+        
+        list($name, $value) = explode('=', $line, 2);
+        
+        $name = trim($name);
+        $value = trim($value, " \t\n\r\0\x0B\"'");
+        
+        // Normalize key: lowercase and strip 'pocketsmith_' prefix (case-insensitive)
+        $key = strtolower($name);
+        $key = preg_replace('/^pocketsmith_/', '', $key);
+        
+        $config[$key] = $value;
     }
+    
     return $config;
 }
 
 /**
  * Get configuration from environment or defaults
+ * Now expects normalized keys: 'developer_key', 'redirect_uri', 'bot_secret'
  */
 function pocketsmith_get_config(): array {
-    $env = pocketsmith_load_env();
-    return array_merge([
-        'developer_key' => $env['DEVELOPER_KEY'] ?? '',
-        'redirect_uri' => $env['REDIRECT_URI'] ?? '',
-        'bot_secret' => $env['BOT_SECRET'] ?? '',
-    ], $env);
+    $env = pocketsmith_load_env_from_all_paths();
+    return [
+        'developer_key' => $env['developer_key'] ?? '',
+        'redirect_uri' => $env['redirect_uri'] ?? '',
+        'bot_secret' => $env['bot_secret'] ?? '',
+    ];
 }
 
 /**
@@ -166,7 +212,7 @@ function pocketsmith_save_session(array $session): void {
 }
 
 /**
- * Load session to temp directory
+ * Load session from temp directory
  */
 function pocketsmith_load_session(): array {
     $dir = sys_get_temp_dir();
