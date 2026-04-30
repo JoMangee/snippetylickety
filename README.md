@@ -1,15 +1,14 @@
-# snippetylickety
+# snippetylicky
 
 Small scripts and things Jo has co-created and wants to share.
 
-# Repository Contents
+# Repository Content
 
 ## `prop/` - Secure Phone-to-Desktop Password Transfer
 
 A tiny, single-file PHP tool for securely transferring long passwords or secrets from your phone to your browser without typing them manually.
 
 Features:
-
 - End-to-end encryption using AES-256-GCM derived from a shared token
 - Desktop shows a QRCode so the phone can open the send page directly
 - Auto-copy to clipboard on reveal
@@ -17,7 +16,7 @@ Features:
 - No accounts, no persistent storage, no external dependencies beyond browser crypto
 - Universal QR code flow that works with any phone camera
 - Phone-first flow supported
-- Keyboard shortcuts: `@E@` to reveal and auto-copy, `@D@` to force cleanup
+- Keyboard shorts: `@E@` to reveal and auto-copy, `@D@` to force cleanup
 - Automatic file cleanup after about 60 seconds or on success
 
 ![Secure Phone-to-Desktop Password Transfer screenshot](https://github.com/user-attachments/assets/ee765b26-cac0-400a-a9ac-7e9674830934)
@@ -50,14 +49,14 @@ That is it. No database, Composer setup, or extra services required.
 
 Usage:
 
-1. On desktop, open `https://prop.yourdomain.com/?init=abcdef12`.
-1. On phone, scan the QR code and open the generated link.
+1. On desktop, open `https://prop.yourdomain.com?init=abcde f12`.
+1. On phone, scan the QR Code and open the generated link.
 1. Paste the secret on the phone and press `Encrypt & Send`.
 1. Back on desktop, press `@E@` to reveal and auto-copy, or `@D@` to force cleanup.
 
 Manual phone entry:
 
-- Open `https://prop.yourdomain.com/?pon=abcdef12` on the phone and send as above.
+- Open `https://prop.yourdomain.com?pon=abcde f12` on the phone and send as above.
 
 Security notes:
 
@@ -66,9 +65,10 @@ Security notes:
 - Files are ephemeral and are deleted after success, the `@D@` key, or timeout.
 - Use a random 8 to 12 character token each time. Short or weak tokens can be brute-forced.
 
+
 ## `ICAM-test.html` - Industrial Camera Test Page
 
-`ICAM-test.html` is a standalone browser-based camera tool intended for tablet or kiiosk-style testing.
+`ICAM-test.html` is a standalone browser-based camera tool intended for table or kiosks-style testing.
 
 It provides:
 
@@ -84,9 +84,9 @@ Usage:
 - Allow camera access when prompted.
 - Use the on-screen controls to start the camera, take snapshots, and save images locally.
 
-# PocketSmith MCP Bridge
+# Pocketsmith MCP Bridge
 
-A PHP-based bridge to facilitate integration with the PocketSmith MCP server, handling OAuth 2.0 with PKCE and token caching.
+A PHP-based bridge to facilitate integration with the Pocketsmith MCP server, handling OAuth 2.0 with PKCE and token caching.
 
 - **Location:** `/pocketsmith`
 - **Features:**
@@ -94,11 +94,25 @@ A PHP-based bridge to facilitate integration with the PocketSmith MCP server, ha
   - Callback listener for secure token exchange.
   - Protected `includes/` directory for core logic.
   - Proxy endpoint for MCP-compatible requests.
-- **Setup:** Deploy the `pocketsmith` folder, ensure a global `includes/config.php` exists with Developer Key credentials, and navigate to the directory to initiate authentication.
+- **Setup:** Deploy the `pocketsmith` folder, configure credentials via `.env` file (preferred method) as the primary configuration approach. Navigate to the directory to initiate authentication.
 
-These are found in PocketSmith under **Security & integrations > Manage developer keys**
+You can find credentials in Pocketsmith under **Security & Integrations > Manage developer keys**.
 
-⚠️ **Security Warning:** These are powerful keys and should never be shared or pasted into a website (only into the server-side config).
+! Note: **Security Warning:** These are powerful keys and should never be shared or passed into a website (only into the server-side config).
+
+### Environment Configuration (Preferred Method)
+
+The Pocketsmith integration now supports configuration via a `.env` file placed in the `pocketsmith/` directory.
+
+1. Copy `pocketsmith/.env.example` to `pocketsmith/.env`
+2. Edit `pocketsmith/.env` and add your credentials:
+   ```
+   POCKETSMITH_DEVELOPER_KEY=your_actual_developer_key_here
+   POCKETSMITH_REDIRECT_URI=https://your-domain.com/pocketsmith/index.php
+   ```
+3. The `.htaccess` file will prevent external access to `.env` for security.
+
+This `.env` configuration takes precedence over the global `config.php` settings, providing a dedicated configuration method per project folder.
 
 License
 

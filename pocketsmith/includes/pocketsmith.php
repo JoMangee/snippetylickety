@@ -2,8 +2,42 @@
 declare(strict_types=1);
 
 /**
- * PocketSmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
+ * Pocketsmith MCP Bridge Helpers (OAuth 2.0 + PKCE)
  */
+
+function pocketsmith_load_env(string $path): array {
+    if (!file_exists($path)) {
+        return [];
+    }
+    
+    $env = [];
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        if (strpos($line, '=') === false) continue;
+        list($key, $value) = explode('=', $line, 2);
+        $env[trim($key)] = trim($value);
+    }
+    return $env;
+}
+
+function pocketsmith_get_config(): array {
+    $envPath = __DIR__ . '/../.env';
+    $envVars = pocketsmith_load_env($envPath);
+    
+    if (!empty($envVars['POCKETSMITH_DEVELOPER_KEY'])) {
+        return [
+            'developer_key' => $envVars['POCKETSMITH_DEVELOPER_KEY'],
+            'redirect_uri' => $envVars['POCKETSMITH_REDIRECT_URI'] ?? '',
+        ];
+    }
+    
+    $config = app_config();
+    return [
+        'developer_key' => $config['pocketsmith_developer_key'] ?? '',
+        'redirect_uri' => $config['pocketsmith_redirect_uri'] ?? '',
+    ];
+}
 
 function pocketsmith_generate_pcke(): array {
     $verifier = bin2hex(random_bytes(32));

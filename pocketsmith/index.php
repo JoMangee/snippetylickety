@@ -4,21 +4,22 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/pocketsmith.php';
 
+$config = pocketsmith_get_config();
+
 header('Content-Type: application/json');
 
 $method = $_SERVER['REQUEST_METHOD'];
 
 // 1. Handle Auth Redirect (Initiated by visiting /pocketsmith)
 if ($method === 'GET' && !isset($_GET['code']) && !isset($_GET['action'])) {
-    $config = app_config();
     $pcke = pocketsmith_generate_pcke();
 
     session_start();
     $_SESSION['ps_pcke_verifier'] = $pcke['verifier'];
 
     $authUrl = pocketsmith_auth_url(
-        $config['pocketsmith_developer_key'],
-        $config['pocketsmith_redirect_uri'],
+        $config['developer_key'],
+        $config['redirect_uri'],
         $pcke['challenge']
     );
 
@@ -30,11 +31,10 @@ if ($method === 'GET' && !isset($_GET['code']) && !isset($_GET['action'])) {
 if ($method === 'GET' && isset($_GET['code'])) {
     session_start();
     $verifier = $_SESSION['ps_pcke_verifier'] ?? '';
-    $config = app_config();
 
     $result = pocketsmith_exchange_token(
-        $config['pocketsmith_developer_key'],
-        $config['pocketsmith_redirect_uri'],
+        $config['developer_key'],
+        $config['redirect_uri'],
         (string)$_GET['code'],
         $verifier
     );
@@ -57,7 +57,7 @@ if ($method === 'POST') {
     $body = json_decode((string)file_get_contents('php://input'), true);
     $inputSecret = (string)($body['secret'] ?? '');
 } else {
-    $inputSecret = (string)($_GET['secret'] ?? '');
+    $inputSecret = (string)$_GET['secret'] ?? '';
 }
 
 if ($secret === '' || !hash_equals($secret, $inputSecret)) {
@@ -66,12 +66,12 @@ if ($secret === '' || !hash_equals($secret, $inputSecret)) {
     exit;
 }
 
-$action = (string)($_GET['action'] ?? 'summary');
+$action = (string)$_GET['action'] ?? 'summary';
 $session = pocketsmith_load_session();
 
 if (!$session) {
     http_response_code(503);
-    echo json_encode(['ok' => false, 'error' => 'PocketSmith not authenticated']);
+    echo json_encode(['ok' => false, 'error' => 'Pocketsmith not authenticated']);
     exit;
 }
 
