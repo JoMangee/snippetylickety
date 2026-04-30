@@ -8,39 +8,7 @@ declare(strict_types=1);
 
 /**
  * Load environment variables from .env file
- * Improved: Supports export prefix, inline comments, and key normalization
- */
-function pocketsmith_load_env_from_all_paths(): array {
-    // Primary path: .env in the parent directory (works for both index.php and test_pocketsmith.php)
-    $parentEnv = __DIR__ . '/../.env';
-    
-    // Fallback paths
-    $scriptEnv = $_SERVER['SCRIPT_FILENAME'] . '/../.env';
-    $includedEnv = __DIR__ . '/includes/.env';
-    
-    $paths = [$parentEnv, $scriptEnv, $includedEnv];
-    
-    $envPath = null;
-    foreach ($paths as $path) {
-        if (file_exists($path)) {
-            $envPath = $path;
-            break;
-        }
-    }
-    
-    if (!$envPath) {
-        return [];
-    }
-    
-    return pocketsmith_load_env($envPath);
-}
-
-/**
- * Load environment variables from .env file
- * Improved: Supports export prefix, inline comments, and key normalization
- * 
- * @param string $path Path to the .env file
- * @return array Normalized environment config
+ * EXACT user-provided function with case-insensitive prefix stripping
  */
 function pocketsmith_load_env(string $path): array {
     if (!file_exists($path)) {
@@ -52,9 +20,7 @@ function pocketsmith_load_env(string $path): array {
     
     foreach ($lines as $line) {
         $line = trim($line);
-        
-        // Skip empty lines and comments
-        if (empty($line) || strpos($line, '#') === 0) {
+        if ($line === '' || $line[0] === '#') {
             continue;
         }
         
@@ -62,36 +28,40 @@ function pocketsmith_load_env(string $path): array {
             continue;
         }
         
-        // Handle "export " prefix
-        if (stripos($line, 'export ') === 0) {
-            $line = substr($line, 7);
-            $line = trim($line);
-        }
-        
-        // Handle inline comments (e.g., "KEY=value # comment")
-        if (strpos($line, ' #') !== false) {
-            $line = explode(' #', $line)[0];
-            $line = trim($line);
-        }
-        
         list($name, $value) = explode('=', $line, 2);
+        $name = strtolower(trim($name));
+        $value = trim($value, " \t\n\r\0\x0B\"");
         
-        $name = trim($name);
-        $value = trim($value, " \t\n\r\0\x0B\"'");
+        // Remove both POCKETSMITH_ and pocketsmith_ prefixes (case-insensitive)
+        $noPrefix = preg_replace('/^pocketsmith_/i', '', $name);
         
-        // Normalize key: lowercase and strip 'pocketsmith_' prefix (case-insensitive)
-        $key = strtolower($name);
-        $key = preg_replace('/^pocketsmith_/', '', $key);
-        
-        $config[$key] = $value;
+        $config[$name] = $value;
+        $config[$noPrefix] = $value;
     }
     
     return $config;
 }
 
 /**
+ * Load environment from most likely paths
+ * Uses __DIR__ relative paths for reliability across index.php and test_pocketsmith.php
+ */
+function pocketsmith_load_env_from_all_paths(): array {
+    $parentEnv = __DIR__ . '/../.env';
+    $scriptEnv = $_SERVER['SCRIPT_FILENAME'] . '/../.env';
+    $includedEnv = __DIR__ . '/includes/.env';
+    
+    foreach ([$parentEnv, $scriptEnv, $includedEnv] as $path) {
+        if (file_exists($path)) {
+            return pocketsmith_load_env($path);
+        }
+    }
+    
+    return [];
+}
+
+/**
  * Get configuration from environment or defaults
- * Now expects normalized keys: 'developer_key', 'redirect_uri', 'bot_secret'
  */
 function pocketsmith_get_config(): array {
     $env = pocketsmith_load_env_from_all_paths();
