@@ -41,14 +41,14 @@ if ($action === 'auth' || (empty($action) && !isset($_GET['code']))) {
             'config_secret_length' => strlen($config['bot_secret'] ?? '')
         ]));
     }
-    $pkc = pocketsmith_generate_pkc(); // DEFINITIVE: pocketsmith_generate_pkc (not pkce, not pck)
+    $pkce = pocketsmith_generate_pkce(); // STANDARDIZED: pocketsmith_generate_pkce (PKCE)
     $auth_state = bin2hex(random_bytes(16));
-    pocketsmith_save_session(['verifier' => $pkc['verifier'], 'state' => $auth_state]);
+    pocketsmith_save_session(['verifier' => $pkce['verifier'], 'state' => $auth_state]);
     $params = [
         'client_id' => $config['developer_key'],
         'redirect_uri' => $config['redirect_uri'],
         'response_type' => 'code',
-        'code_challenge' => $pkc['challenge'],
+        'code_challenge' => $pkce['challenge'],
         'code_challenge_method' => 'S256',
         'mode' => 'readonly',
         'state' => $auth_state,
