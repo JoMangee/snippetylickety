@@ -1,196 +1,59 @@
 <?php
-if (isset($_GET['test'])) { die('PHP IS WORKING'); }
-// Debug output first to catch parse errors
-header('X-Debug: Pocketsmith Index');
-echo '<!-- PHP Initialized -->' . PHP_EOL;
-
-echo '<!-- Debug: Line 1 -->' . PHP_EOL;
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-echo '<!-- Debug: Line 2 -->' . PHP_EOL;
-error_reporting(E_ALL);
-echo '<!-- Debug: Line 3 -->' . PHP_EOL;
-
-// FIXED: Added $ prefix before includePath
 $includePath = __DIR__ . '/includes/pocketsmith.php';
-echo '<!-- Debug: Include path: ' . htmlspecialchars($includePath) . ' -->' . PHP_EOL;
-
-if (!file_exists($includePath)) {
-    die('FAILED: Missing ' . htmlspecialchars($includePath));
-}
-echo '<!-- Debug: Line 5 -->' . PHP_EOL;
-
+if (!file_exists($includePath)) die("Missing includes");
 require_once $includePath;
-echo '<!-- Debug: Includes loaded successfully -->' . PHP_EOL;
-echo '<!-- Debug: Line 6 -->' . PHP_EOL;
 
 $config = pocketsmith_get_config();
-$secret = $_GET['secret'] ?? '';
 $action = $_GET['action'] ?? '';
-
-if (empty($config['developer_key'] ?? '') || empty($config['redirect_uri'] ?? '')) {
-    header('Content-Type: application/json');
-    $envPath = dirname(__DIR__) . '/.env';
-    echo json_encode([
-        'ok' => false,
-        'error' => 'Missing POCKETSMITH_DEVELOPER_KEY or POCKETSMITH_REDIRECT_URI',
-        'env_path' => $envPath,
-        'file_exists' => file_exists($envPath),
-        'env_content_preview' => file_exists($envPath) ? substr(file_get_contents($envPath), 0, 200) : 'N/A',
-        'keys_found' => array_keys($config),
-        'config_count' => count($config)
-    ]);
-    exit;
-}
+$secret = $_GET['secret'] ?? '';
 
 if ($action === 'health') {
     header('Content-Type: application/json');
-    echo json_encode([
-        'status' => 'operational',
-        'env_loaded' => !empty($config),
-        'secret_set' => !empty($config['bot_secret'] ?? ''),
-        'keys' => array_keys($config)
-    ]);
+    echo json_encode(['status' => 'operational', 'env_loaded' => !empty($config)]);
     exit;
 }
 
-$botSecret = $config['bot_secret'] ?? '';
-$allowed = false;
-
-if ($botSecret && hash_equals($botSecret, $secret)) {
-    $allowed = true;
-}
-
-if (isset($_GET['code'])) {
-    try {
-        $sessionData = pocketsmith_load_session();
-        if ($sessionData && isset($sessionData['auth_state'])) {
-            if (hash_equals($sessionData['auth_state'], $_GET['state'] ?? '')) {
-                $allowed = true;
-            }
-        }
-    } catch (Throwable $e) {
-        // Silent - session load error
-    }
-}
-
-if (!$allowed) {
-    header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['ok' => false, 'error' => 'Forbidden']);
+if ($action === 'auth' || (empty($action) && !isset($_GET['code']))) {
+    if ($secret !== ($config['bot_secret'] ?? '')) die("Unauthorized");
+    $pkc = pocketsmith_generate_pkc();
+    $auth_state = bin2hex(random_bytes(16));
+    pocketsmith_save_session(['verifier' => $pkc['verifier'], 'state' => $auth_state]);
+    $params = ['client_id' => $config['developer_key'], 'redirect_uri' => $config['redirect_uri'], 'response_type' => 'code', 'code_challenge' => $pkc['challenge'], 'code_challenge_method' => 'S256', 'mode' => 'readonly', 'state' => $auth_state];
+    header("Location: https://mcp-readonly.pocketsmith.com/oauth/authorize?" . http_build_query($params));
     exit;
 }
 
 if (isset($_GET['code'])) {
-    try {
-        $sessionData = pocketsmith_load_session();
-        $result = pocketsmith_exchange_token(
-            $config['developer_key'] ?? '',
-            $config['redirect_uri'] ?? '',
-            $_GET['code'],
-            $sessionData['verifier'] ?? ''
-        );
-        $accessToken = $result['session']['access_token'] ?? $result['access_token'] ?? null;
-        $refreshToken = $result['session']['refresh_token'] ?? $result['refresh_token'] ?? null;
-        if ($accessToken)
-            $sessionData['access_token'] = $accessToken; 
-            if ($refreshToken)
-                $sessionData['refresh_token'] = $refreshToken;
-            
-            pocketsmith_save_session($sessionData);
-            echo 'Authenticated!';
-        } else {
-            echo 'Authentication failed. Result keys: ' . implode(', ', array_keys($result));
-            echo '<br />' . PHP_EOL;
-            echo '<pre>' . htmlspecialchars(print_r($result, true)) . '</pre>' . PHP_EOL;
-        }
-    } catch (Throwable $e) {
-        echo 'OAuth callback error: ' . htmlspecialchars($e->getMessage());
+    $session = pocketsmith_load_session();
+    $ch = curl_init("https://mcp-readonly.pocketsmith.com/oauth/token");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(['grant_type' => 'authorization_code', 'client_id' => $config['developer_key'], 'code' => $_GET['code'], 'redirect_uri' => $config['redirect_uri'], 'code_verifier' => $session['verifier']]));
+    $result = json_decode(curl_exec($ch), true);
+    curl_close($ch);
+    $token = $result['session']['access_token'] ?? $result['access_token'] ?? null;
+    if ($token) {
+        $session['access_token'] = $token;
+        pocketsmith_save_session($session);
+        echo "Authenticated!";
+    } else {
+        echo "Handshake failed";
     }
     exit;
 }
 
 if (!empty($action)) {
     $session = pocketsmith_load_session();
-    if (empty($session['access_token'] ?? null)) {
-        $pkc = pocketsmith_generate_pkc();
-        $auth_state = bin2hex(random_bytes(16));
-        $pkc['auth_state'] = $auth_state;
-        pocketsmith_save_session($pkc);
-        $url = pocketsmith_auth_url(
-            $config['developer_key'] ?? '',
-            $config['redirect_uri'] ?? '',
-            $pkc['challenge'],
-            $auth_state
-        );
-        header("Location: " . $url);
-        exit;
-    }
-    
-    // Handle action=me to get user_id
-    if ($action === 'me') {
-        $result = pocketsmith_mcp_request($config['developer_key'], 'me');
-        if (isset($result['result'])) {
-            $me_result = $result['result'];
-            if (is_array($me_result) && isset($me_result['id'])) {
-                $user_id = $me_result['id'];
-                // Store in session for later use
-                $pkc['user_id'] = $user_id;
-                pocketsmith_save_session($pkc);
-                header('Content-Type: application/json');
-                echo json_encode(['ok' => true, 'user_id' => $user_id]);
-                exit;
-            }
-        }
-        header('Content-Type: application/json');
-        echo json_encode(['ok' => false, 'error' => 'Failed to get user info']);
-        exit;
-    }
-    
-    // Handle action=accounts with stored user_id
-    if ($action === 'accounts') {
-        $user_id = $pkc['user_id'] ?? null;
-        if (!$user_id && isset($_GET['user_id'])) {
-            $user_id = $_GET['user_id'];
-        }
-        
-        if ($user_id) {
-            $result = pocketsmith_mcp_request($config['developer_key'], 'list_accounts', ['userId' => $user_id]);
-            header('Content-Type: application/json');
-            if (isset($result['result'])) {
-                echo json_encode($result['result']);
-            } else {
-                echo json_encode($result);
-            }
-            exit;
-        } else {
-            header('Content-Type: application/json');
-            echo json_encode(['ok' => false, 'error' => 'No user_id available. Call action=me first to get user_id.']);
-            exit;
-        }
-    }
-    
-    $result = pocketsmith_mcp_request($session['access_token'], $action);
+    if (empty($session['access_token'])) die("Unauthorized - Please authenticate first");
     header('Content-Type: application/json');
-    if (isset($result['response'])) {
-        echo json_encode($result['response']);
+    if ($action === 'list_tools') {
+        echo json_encode(pocketsmith_mcp_request($session['access_token'], 'tools/list'));
+    } elseif ($action === 'me') {
+        echo json_encode(pocketsmith_mcp_request($session['access_token'], 'tools/call', ['name' => 'get_current_user', 'arguments' => (object)[]]));
     } else {
-        echo json_encode($result);
+        $args = (isset($_GET['user_id'])) ? ['user_id' => (int)$_GET['user_id']] : [];
+        $toolName = ($action === 'accounts') ? 'list_accounts' : $action;
+        echo json_encode(pocketsmith_mcp_request($session['access_token'], 'tools/call', ['name' => $toolName, 'arguments' => (object)$args]));
     }
     exit;
-}
-
-try {
-    $pkc = pocketsmith_generate_pkc();
-    $auth_state = bin2hex(random_bytes(16));
-    $pkc['auth_state'] = $auth_state;
-    pocketsmith_save_session($pkc);
-    $url = pocketsmith_auth_url(
-        $config['developer_key'] ?? '',
-        $config['redirect_uri'] ?? '',
-        $pkc['challenge'],
-        $auth_state
-    );
-    header("Location: " . $url);
-} catch (Throwable $e) {
-    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
 }
