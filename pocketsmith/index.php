@@ -18,8 +18,8 @@ if ($action === 'health') {
     exit;
 }
 
-// SECURITY: Check secret for all non-health actions
-if ($action !== 'health' && empty($action)) {
+// SECURITY: Check secret for non-callback requests with empty action
+if ($action !== 'health' && empty($action) && !isset($_GET['code'])) {
     if ($secret !== ($config['bot_secret'] ?? '')) {
         header('Content-Type: application/json');
         die(json_encode([
