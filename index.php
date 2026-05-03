@@ -1,3 +1,27 @@
+$config = pocketsmith_get_config();
+$action = $_GET['action'] ?? '';
+$secret = $_GET['secret'] ?? '';
+
+// User-facing session status check
+if ($action === 'session_status') {
+    if ($secret !== ($config['bot_secret'] ?? '')) die("Unauthorized");
+    $session = pocketsmith_load_session();
+    $token = $session['access_token'] ?? null;
+    $created = $session['created_at'] ?? null;
+    $expires = $session['expires_in'] ?? null;
+    header('Content-Type: application/json');
+    if ($token && $created && $expires) {
+        $expiry = $created + $expires;
+        echo json_encode([
+            'status' => 'authenticated',
+            'token_expires_at' => date('c', $expiry),
+            'token_valid' => time() < $expiry
+        ]);
+    } else {
+        echo json_encode(['status' => 'not_authenticated']);
+    }
+    exit;
+}
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
