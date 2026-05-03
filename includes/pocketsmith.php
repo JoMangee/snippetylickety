@@ -23,7 +23,7 @@ function pocketsmith_get_config(): array {
     return pocketsmith_load_env($paths[0]);
 }
 
-function pocketsmith_generate_pkc(): array {
+function pocketsmith_generate_pkce(): array {
     $verifier = bin2hex(random_bytes(32));
     return ['verifier' => $verifier, 'challenge' => str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(hash('sha256', $verifier, true)))];
 }
@@ -38,7 +38,7 @@ function pocketsmith_load_session(): array {
     return file_exists($sessionFile) ? json_decode(file_get_contents($sessionFile), true) : [];
 }
 
-function pocketsmith_mcp_request(string $token, string $method, array $params = []): array {
+function pocketsmith_mcp_request(string $token, string $method, array $params = [], bool $raw = false): array {
     $ch = curl_init("https://mcp-readonly.pocketsmith.com/mcp");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
@@ -50,5 +50,6 @@ function pocketsmith_mcp_request(string $token, string $method, array $params = 
     $error = curl_error($ch);
     curl_close($ch);
     if ($response === false) return ['ok' => false, 'error' => $error];
+    if ($raw) return ['status' => $httpCode, 'response' => $response];
     return ['status' => $httpCode, 'response' => json_decode($response, true)];
 }
