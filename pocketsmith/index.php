@@ -200,6 +200,23 @@ if (!empty($action)) {
         echo json_encode(['error' => 'Unauthorized - Invalid secret or bot_token']);
         exit;
     }
+
+    // Validate action format so callers get a clear message instead of MCP method errors.
+    $localActions = ['health', 'bot_token', 'session_status', 'session_debug', 'auth', 'debug', 'list_tools'];
+    $isLocalAction = in_array($action, $localActions, true);
+    $isToolStyle = (bool)preg_match('/^[a-z][a-z0-9_]*$/', $action);
+    if (!$isLocalAction && !$isToolStyle) {
+        header('Content-Type: application/json');
+        http_response_code(400);
+        echo json_encode([
+            'error' => 'Invalid action format',
+            'message' => 'Use local actions (health, bot_token, session_status, session_debug, auth, debug, list_tools) or PocketSmith tool names like list_accounts and get_current_user.',
+            'received' => $action,
+            'example_tool' => 'list_accounts',
+        ]);
+        exit;
+    }
+
     $session = pocketsmith_load_session();
     if (empty($session['access_token'])) {
         die("Unauthorized - No access token. Please visit the auth link: https://ps.tinypeople.mesh.net.nz/index.php?action=auth");
@@ -209,25 +226,56 @@ if (!empty($action)) {
     
     // Debug mode: return raw response
     $raw_mode = ($action === 'debug');
-    if ($raw_mode) $action = 'accounts';
+    if ($raw_mode) $action = 'list_accounts';
     
-    // Handle tools.list for discovery
+    // Handle tools list for discovery locally (PocketSmith MCP does not expose tools.list)
     if (!$raw_mode) {
-        if ($action === 'list_tools') {
-            $method = 'tools.list';
-            $args = [];
+        if ($action === 'list_tools' || $action === 'tools.list') {
+            echo json_encode([
+                'status' => 200,
+                'response' => [
+                    'ok' => true,
+                    'tools' => [
+                        'list_accounts',
+                        'get_current_user',
+                        'list_transactions',
+                        'get_transaction',
+                        'create_transaction',
+                        'update_transaction',
+                        'delete_transaction',
+                        'list_categories',
+                        'get_category',
+                        'create_category',
+                        'update_category',
+                        'delete_category',
+                        'list_events',
+                        'get_event',
+                        'create_event',
+                        'update_event',
+                        'delete_event',
+                        'list_labels',
+                        'list_saved_searches',
+                        'get_budget',
+                        'get_budget_summary',
+                        'get_trend_analysis',
+                        'financial_health_snapshot',
+                        'month_end_review',
+                        'spending_comparison',
+                        'find_recurring_expenses',
+                        'cash_flow_forecast'
+                    ]
+                ]
+            ]);
+            exit;
         } else {
-            // Map actions to official dot-notation methods
-            $method = ($action === 'accounts') ? 'accounts.list' : $action;
-            if ($action === 'me') {
-                $method = 'user.get';
-            }
+            // Use PocketSmith MCP tool names directly (e.g. list_accounts, get_current_user).
+            $method = $action;
             $args = (isset($_GET['user_id'])) ? ['user_id' => (int)$_GET['user_id']] : [];
         }
         
         echo json_encode(pocketsmith_mcp_request($session['access_token'], $method, $args));
     } else {
-        echo json_encode(pocketsmith_mcp_request($session['access_token'], 'accounts.list', [], true));
+        echo json_encode(pocketsmith_mcp_request($session['access_token'], 'list_accounts', [], true));
     }
     exit;
 }
