@@ -17,7 +17,7 @@ if ($action === 'health') {
 
 if ($action === 'auth' || (empty($action) && !isset($_GET['code']))) {
     if ($secret !== ($config['bot_secret'] ?? '')) die("Unauthorized");
-    $pk = pocketsmith_generate_pkc(); // DEFINITIVE: pocketsmith_generate_pkc (not pkce, not pck)
+    $pk = pocketsmith_generate_pkce();
     $auth_state = bin2hex(random_bytes(16));
     pocketsmith_save_session(['verifier' => $pk['verifier'], 'state' => $auth_state]);
     $params = [
@@ -51,9 +51,9 @@ if (isset($_GET['code'])) {
     if ($token) {
         $session['access_token'] = $token;
         pocketsmith_save_session($session);
-        echo "Authenticated!"
+        echo "Authenticated!";
     } else {
-        echo "Handshake failed"
+        echo "Handshake failed";
     }
     exit;
 }
@@ -68,20 +68,22 @@ if (!empty($action)) {
 
     // Debug mode: return raw response
     $raw_mode = ($action === 'debug');
-    if ($raw_mode) $action = 'list_accounts';
+    if ($raw_mode) $action = 'accounts.list';
 
     // Handle tools/list for discovery; others auto-wrap
     if (!$raw_mode) {
         if ($action === 'list_tools') {
-            echo json_encode(pocketsmith_mcp_request($session['access_token'], 'tools/list', []));
+            echo json_encode(pocketsmith_mcp_request($session['access_token'], 'tools.list', []));
         } else {
-            $tool = ($action === 'accounts') ? 'list_accounts' : $action;
-            if ($action === 'me') $tool = 'get_current_user';
+            // Map friendly action names to MCP method names
+            $tool = $action;
+            if ($action === 'accounts') $tool = 'accounts.list';
+            if ($action === 'me') $tool = 'user.get';
             $args = (isset($_GET['user_id'])) ? ['user_id' => (int)$_GET['user_id']] : [];
             echo json_encode(pocketsmith_mcp_request($session['access_token'], $tool, $args));
         }
     } else {
-        echo json_encode(pocketsmith_mcp_request($session['access_token'], 'list_accounts', [], true));
+        echo json_encode(pocketsmith_mcp_request($session['access_token'], 'accounts.list', [], true));
     }
     exit;
 }

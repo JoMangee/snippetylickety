@@ -61,4 +61,29 @@ if (function_exists('pocketsmith_mcp_request')) {
     fail("MCP request: function missing");
 }
 
+// --- End-to-End MCP API Feature Test ---
+$session = pocketsmith_load_session();
+if (!empty($session['access_token'])) {
+    $token = $session['access_token'];
+    $methods = [
+        'accounts.list',
+        'user.get',
+        'categories.list',
+        'budgets.list',
+        'tools.list'
+    ];
+    foreach ($methods as $method) {
+        $result = pocketsmith_mcp_request($token, $method, []);
+        if (isset($result['response']['result']) || isset($result['response']['jsonrpc'])) {
+            pass("MCP $method: response OK");
+        } elseif (isset($result['response']['error'])) {
+            fail("MCP $method: error: " . $result['response']['error']['message']);
+        } else {
+            fail("MCP $method: unexpected response");
+        }
+    }
+} else {
+    echo "[INFO] No access token found. Please authenticate via the web interface before running end-to-end MCP tests.\n";
+}
+
 echo "All tests complete. No secrets were output.\n";

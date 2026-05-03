@@ -200,4 +200,34 @@ echo $payload;
 | `Invalid params` or `Tool not found` | Wrong MCP protocol | Use direct tool name as method |
 | `.env not found` | Wrong path | Search multiple locations |
 | `Blank page` | PHP fatal error | Check error logs or enable display_errors |
-| `ERR_TUNNEL_CONNECTION_FAILED` | Security firewall (BitNinja) | Visit site in browser to bypass CAPTCHA |
+
+---
+
+## 4. Session Storage Location
+
+- The session (OAuth token and related state) is saved as a base64-encoded JSON file named `ps_session.json`.
+- By default, this file is stored in the `/includes` directory, which is permission-locked for security.
+- You can override the storage location by setting `SESSION_DIR` in your `.env` file:
+  
+  ```
+  SESSION_DIR=/your/custom/path
+  ```
+- If not set, the default is the `includes` directory next to your code.
+
+### Troubleshooting Session Issues
+
+- **Missing or unreadable session file:**
+  - Ensure the directory exists and is writable by the web server or CLI user.
+  - Check file permissions if you see repeated authentication prompts or lost sessions.
+
+- **Session file not found in expected location:**
+  - Confirm the `SESSION_DIR` value in your `.env` file is correct and points to a valid directory.
+  - If you move your code, double-check the session directory path.
+
+- **Security:**
+  - The default `/includes` directory is not web-accessible if your `.htaccess` is set up correctly.
+  - Do not store session files in a public web directory.
+
+### How to Reset Session
+
+- To force a new login, simply delete the `ps_session.json` file from the session directory.

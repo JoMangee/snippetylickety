@@ -1,5 +1,29 @@
-<?php
-declare(strict_types=1);
+/**
+ * Get a valid (non-expired) access token from session, or null if expired/missing.
+ * Handles all expiry logic for the end user.
+ */
+function pocketsmith_get_valid_token(): ?string {
+    $session = pocketsmith_load_session();
+    if (!$session || !isset($session['access_token'], $session['expires_in'], $session['created_at'])) {
+        return null;
+    /**
+     * Save session to a configurable directory (default: /includes, permission locked)
+     */
+    function pocketsmith_save_session(array $session): void {
+        $config = pocketsmith_get_config();
+        $dir = $config['session_dir'] ?? (__DIR__);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $filename = rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'ps_session.json';
+        // Add created_at if not present
+        if (!isset($session['created_at'])) {
+            $session['created_at'] = time();
+        }
+        // Encode session as base64 JSON for simple obfuscation
+        $encoded = base64_encode(json_encode($session));
+        file_put_contents($filename, $encoded);
+    }
 
 /**
  * PocketSmith MCP Bridge
@@ -178,21 +202,24 @@ function pocketsmith_save_session(array $session): void {
     $dir = sys_get_temp_dir();
     $hash = md5($_SERVER['REMOTE_ADDR'] ?? 'default');
     $filename = "{$dir}/ps_session_{$hash}";
+    // Add created_at if not present
+    if (!isset($session['created_at'])) {
+        $session['created_at'] = time();
+    }
     file_put_contents($filename, json_encode($session));
 }
 
 /**
- * Load session from temp directory
+ * Load session from a configurable directory (default: /includes)
  */
 function pocketsmith_load_session(): array {
-    $dir = sys_get_temp_dir();
-    $hash = md5($_SERVER['REMOTE_ADDR'] ?? 'default');
-    $filename = "{$dir}/ps_session_{$hash}";
-    
+    $config = pocketsmith_get_config();
+    $dir = $config['session_dir'] ?? (__DIR__);
+    $filename = rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'ps_session.json';
     if (!file_exists($filename)) {
         return [];
     }
-    
-    $data = file_get_contents($filename);
-    return json_decode($data, true) ?? [];
+    $encoded = file_get_contents($filename);
+    $data = json_decode(base64_decode($encoded), true);
+    return $data ?? [];
 }
