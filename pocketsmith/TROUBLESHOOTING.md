@@ -148,6 +148,53 @@ foreach ($paths as $path) {
 
 ---
 
+## Available Endpoints (Agent Reference)
+
+All endpoints are at `https://your-domain.com/pocketsmith/index.php`.
+
+| Action | Auth Required | Description |
+|--------|--------------|-------------|
+| `?action=health` | None | Check if the service is running |
+| `?action=bot_token&secret=SECRET` | Full secret | Get a short-lived bot token (valid for `TOKEN_WINDOW` seconds, default 15 min) |
+| `?action=session_status&secret=SECRET` or `&bot_token=TOKEN` | Secret or bot token | Check if OAuth session is authenticated and token expiry |
+| `?action=session_debug&secret=SECRET` or `&bot_token=TOKEN` | Secret or bot token | Diagnose session file path and state (no secrets exposed) |
+| `?action=auth&secret=SECRET` | Full secret only | Initiate OAuth flow — redirects to PocketSmith login |
+| `?action=accounts&bot_token=TOKEN` | Secret or bot token | List accounts via MCP |
+| `?action=me&bot_token=TOKEN` | Secret or bot token | Get current user via MCP |
+| `?action=list_tools&bot_token=TOKEN` | Secret or bot token | List available MCP tools |
+| `?action=debug&bot_token=TOKEN` | Secret or bot token | Raw MCP response for `accounts.list` |
+| `?action=TOOL_NAME&bot_token=TOKEN` | Secret or bot token | Call any MCP tool by name (e.g. `categories.list`) |
+
+### Bot Token Flow (Recommended for Agents)
+
+1. **Obtain a token** (once, using full secret):
+   ```
+   GET ?action=bot_token&secret=YOUR_SECRET
+   → {"bot_token": "a3f9c12d...", "expires_in": 743, "expires_at": "...", "window_seconds": 900}
+   ```
+
+2. **Use the token** for all subsequent requests:
+   ```
+   GET ?action=accounts&bot_token=a3f9c12d...
+   GET ?action=session_status&bot_token=a3f9c12d...
+   ```
+
+3. **Token windows** are configurable via `POCKETSMITH_TOKEN_WINDOW` in `.env` (default: 900 seconds). The previous window is also accepted to avoid failures at window boundaries.
+
+4. **`auth` always requires the full secret** — OAuth initiation is a privileged action and bot tokens cannot be used for it.
+
+### .env Keys Reference
+
+| Key | Required | Default | Description |
+|-----|----------|---------|-------------|
+| `POCKETSMITH_DEVELOPER_KEY` | Yes | — | Your PocketSmith developer key |
+| `POCKETSMITH_REDIRECT_URI` | Yes | — | OAuth redirect URI (must match PocketSmith app settings) |
+| `POCKETSMITH_BOT_SECRET` | Yes | — | Secret used to authenticate requests |
+| `POCKETSMITH_TOKEN_WINDOW` | No | `900` | Bot token validity window in seconds |
+| `POCKETSMITH_SESSION_DIR` | No | `includes/` | Directory to store `ps_session.json` |
+
+---
+
 ## Quick Checklist Before Deploying
 
 1. ✅ Every variable has `$` prefix
@@ -197,9 +244,14 @@ echo $payload;
 |-------|--------------|-----|
 | `Call to undefined function pocketsmith_generate_pck()` | Typo in function name | Use `pocketsmith_generate_pkce()` |
 | `Undefined variable: includePath` | Missing `$` prefix | Add `$` to variable name |
-| `Invalid params` or `Tool not found` | Wrong MCP protocol | Use direct tool name as method |
+| `Invalid params` or `Tool not found` | Wrong MCP protocol | Use direct tool name as method (e.g. `accounts.list`) |
 | `.env not found` | Wrong path | Search multiple locations |
 | `Blank page` | PHP fatal error | Check error logs or enable display_errors |
+| `Unauthorized` | Missing or wrong secret/bot_token | Check `POCKETSMITH_BOT_SECRET` in `.env` |
+| `{"error":"Not authenticated"}` | No session token saved | Visit `?action=auth&secret=...` to authenticate |
+| `{"status":"not_authenticated"}` | Session file missing or expired | Re-authenticate via `?action=auth&secret=...` |
+| `token_expired: true` from session_debug | OAuth token expired | Re-authenticate via `?action=auth&secret=...` |
+| `session_file_exists: false` from session_debug | Session file in wrong location | Check `SESSION_DIR` in `.env` matches where session was saved |
 
 ---
 
@@ -213,6 +265,36 @@ echo $payload;
   SESSION_DIR=/your/custom/path
   ```
 - If not set, the default is the `includes` directory next to your code.
+
+### Diagnosing Session Path Problems
+
+Use the built-in debug endpoint to check exactly where your session file is being read from and written to:
+
+```
+https://your-domain.com/pocketsmith/index.php?action=session_debug&secret=YOUR_SECRET
+```
+
+This returns JSON like:
+```json
+{
+  "session_file_path": "/home/user/pocketsmith/includes/ps_session.json",
+  "session_file_exists": true,
+  "session_file_readable": true,
+  "session_dir_writable": true,
+  "has_access_token": true,
+  "has_verifier": false,
+  "has_created_at": true,
+  "has_expires_in": true,
+  "token_expired": false,
+  "php_include_dir": "/home/user/pocketsmith"
+}
+```
+
+**No token values are ever exposed by this endpoint.**
+
+If `session_file_exists` is `false`, the session file is not where the code expects it. Check your `SESSION_DIR` in `.env` and ensure you have authenticated via `?action=auth&secret=...`.
+
+If `has_access_token` is `false` but the file exists, the session may be corrupted or from an old format. Delete `ps_session.json` and re-authenticate.
 
 ### Troubleshooting Session Issues
 
