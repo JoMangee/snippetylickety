@@ -67,6 +67,65 @@ if ($action === 'bot_token') {
     exit;
 }
 
+// Session status for users/agents (supports secret or bot_token)
+if ($action === 'session_status') {
+    if (!pocketsmith_is_authorized($secret, $botToken, $botSecret, $tokenWindow)) {
+        header('Content-Type: application/json');
+        http_response_code(403);
+        echo json_encode(['error' => 'Unauthorized - Invalid secret or bot_token']);
+        exit;
+    }
+
+    $session = pocketsmith_load_session();
+    $token = $session['access_token'] ?? null;
+    $created = $session['created_at'] ?? null;
+    $expires = $session['expires_in'] ?? null;
+
+    header('Content-Type: application/json');
+    if ($token && $created && $expires) {
+        $expiry = (int)$created + (int)$expires;
+        echo json_encode([
+            'status' => 'authenticated',
+            'token_expires_at' => date('c', $expiry),
+            'token_valid' => time() < $expiry,
+        ]);
+    } else {
+        echo json_encode(['status' => 'not_authenticated']);
+    }
+    exit;
+}
+
+// Session path and health diagnostics (no token values exposed)
+if ($action === 'session_debug') {
+    if (!pocketsmith_is_authorized($secret, $botToken, $botSecret, $tokenWindow)) {
+        header('Content-Type: application/json');
+        http_response_code(403);
+        echo json_encode(['error' => 'Unauthorized - Invalid secret or bot_token']);
+        exit;
+    }
+
+    $sessionDir = $config['session_dir'] ?? __DIR__;
+    $sessionFile = rtrim($sessionDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'ps_session.json';
+    $session = pocketsmith_load_session();
+
+    header('Content-Type: application/json');
+    echo json_encode([
+        'session_file_path' => $sessionFile,
+        'session_file_exists' => file_exists($sessionFile),
+        'session_file_readable' => is_readable($sessionFile),
+        'session_dir_writable' => is_writable($sessionDir),
+        'has_access_token' => !empty($session['access_token']),
+        'has_verifier' => !empty($session['verifier']),
+        'has_created_at' => isset($session['created_at']),
+        'has_expires_in' => isset($session['expires_in']),
+        'token_expired' => isset($session['created_at'], $session['expires_in'])
+            ? time() > ((int)$session['created_at'] + (int)$session['expires_in'] - 60)
+            : null,
+        'php_include_dir' => __DIR__,
+    ]);
+    exit;
+}
+
 // SECURITY: Check secret for non-callback requests with empty action
 if ($action !== 'health' && empty($action) && !isset($_GET['code'])) {
     if (!pocketsmith_is_authorized($secret, $botToken, $botSecret, $tokenWindow)) {
@@ -124,6 +183,8 @@ if (isset($_GET['code'])) {
     $token = $result['session']['access_token'] ?? $result['access_token'] ?? null;
     if ($token) {
         $session['access_token'] = $token;
+        $session['expires_in'] = $result['session']['expires_in'] ?? $result['expires_in'] ?? 3600;
+        $session['created_at'] = time();
         pocketsmith_save_session($session);
         echo "Authenticated!";
     } else {
