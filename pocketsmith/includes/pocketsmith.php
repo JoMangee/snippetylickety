@@ -107,38 +107,84 @@ function pocketsmith_exchange_token(string $code): array {
 }
 
 function pocketsmith_mcp_request(string $token, string $method, array $params = [], bool $raw = false): array {
-    $payload = json_encode([
+    $send = function (array $body) use ($token): array {
+        $payload = json_encode($body);
+        $ch = curl_init('https://mcp-readonly.pocketsmith.com/mcp');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Accept: application/json, text/event-stream',
+            'Authorization: Bearer ' . $token,
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        return [
+            'status' => $httpCode,
+            'response_raw' => $response,
+            'response_json' => json_decode((string)$response, true),
+            'payload' => $payload,
+            'error' => $error,
+        ];
+    };
+
+    // 1) Try direct tool method style: { method: "list_accounts", params: {...} }
+    $direct = $send([
         'jsonrpc' => '2.0',
         'method' => $method,
         'params' => (object)$params,
         'id' => uniqid(),
     ]);
 
-    $ch = curl_init('https://mcp-readonly.pocketsmith.com/mcp');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Accept: application/json, text/event-stream',
-        'Authorization: Bearer ' . $token,
-    ]);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    if ($direct['response_raw'] === false) {
+        return ['status' => 0, 'error' => $direct['error']];
+    }
 
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error = curl_error($ch);
-    curl_close($ch);
+    $directErrorCode = $direct['response_json']['error']['code'] ?? null;
+    $directErrorMsg = (string)($direct['response_json']['error']['message'] ?? '');
+    $methodNotFound = ($directErrorCode === -32601) || stripos($directErrorMsg, 'method not found') !== false;
 
-    if ($response === false) {
-        return ['status' => 0, 'error' => $error];
+    // 2) Fallback to MCP tools/call style when method name is not found.
+    if ($methodNotFound) {
+        $fallback = $send([
+            'jsonrpc' => '2.0',
+            'method' => 'tools/call',
+            'params' => [
+                'name' => $method,
+                'arguments' => (object)$params,
+            ],
+            'id' => uniqid(),
+        ]);
+
+        if ($fallback['response_raw'] !== false) {
+            if ($raw) {
+                return [
+                    'status' => $fallback['status'],
+                    'response' => $fallback['response_raw'],
+                    'payload' => $fallback['payload'],
+                    'error' => $fallback['error'],
+                ];
+            }
+            return ['status' => $fallback['status'], 'response' => $fallback['response_json']];
+        }
     }
 
     if ($raw) {
-        return ['status' => $httpCode, 'response' => $response, 'payload' => $payload, 'error' => $error];
+        return [
+            'status' => $direct['status'],
+            'response' => $direct['response_raw'],
+            'payload' => $direct['payload'],
+            'error' => $direct['error'],
+        ];
     }
 
-    return ['status' => $httpCode, 'response' => json_decode((string)$response, true)];
+    return ['status' => $direct['status'], 'response' => $direct['response_json']];
 }
 
 function pocketsmith_save_session(array $session): void {
