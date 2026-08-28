@@ -94,6 +94,69 @@ if (!array_key_exists('tags', $builtArgs)) {
     fail("build_tool_args: array value was not skipped: " . json_encode($builtArgs));
 }
 
+// --- pocketsmith_extract_mcp_items() Unit Tests ---
+// Mirrors the real MCP tools/call envelope confirmed live: result.content[0].text =
+// "Page X of Y (N total)\n\n<json>".
+$toolsCallResponse = [
+    'result' => [
+        'content' => [
+            ['type' => 'text', 'text' => "Page 1 of 1 (2 total)\n\n" . json_encode([
+                ['id' => 1, 'name' => 'Everyday'],
+                ['id' => 2, 'name' => 'Savings'],
+            ])],
+        ],
+        'isError' => false,
+    ],
+];
+$extracted = pocketsmith_extract_mcp_items($toolsCallResponse);
+if (count($extracted) === 2 && $extracted[0]['name'] === 'Everyday') {
+    pass("extract_mcp_items: unwraps 'Page X of Y' text envelope");
+} else {
+    fail("extract_mcp_items: tools/call unwrap failed: " . json_encode($extracted));
+}
+
+$directResponse = ['result' => [['id' => 1, 'name' => 'Everyday']]];
+$extractedDirect = pocketsmith_extract_mcp_items($directResponse);
+if (count($extractedDirect) === 1 && $extractedDirect[0]['name'] === 'Everyday') {
+    pass("extract_mcp_items: direct method-style array result");
+} else {
+    fail("extract_mcp_items: direct-style unwrap failed: " . json_encode($extractedDirect));
+}
+
+// --- pocketsmith_filter_transaction_accounts() Unit Tests ---
+$accounts = [
+    ['id' => 1, 'name' => 'Everyday Visa', 'institution' => ['title' => 'BNZ']],
+    ['id' => 2, 'name' => 'Savings', 'institution' => ['title' => 'BNZ']],
+    ['id' => 3, 'name' => 'Credit Card', 'institution' => ['title' => 'Kiwibank']],
+];
+$byId = pocketsmith_filter_transaction_accounts($accounts, ['account_id' => '2']);
+if (count($byId) === 1 && $byId[0]['id'] === 2) {
+    pass("filter_transaction_accounts: account_id filter");
+} else {
+    fail("filter_transaction_accounts: account_id filter failed: " . json_encode($byId));
+}
+
+$bySearch = pocketsmith_filter_transaction_accounts($accounts, ['search' => 'kiwibank']);
+if (count($bySearch) === 1 && $bySearch[0]['id'] === 3) {
+    pass("filter_transaction_accounts: search filter");
+} else {
+    fail("filter_transaction_accounts: search filter failed: " . json_encode($bySearch));
+}
+
+$byLimit = pocketsmith_filter_transaction_accounts($accounts, ['limit' => '2']);
+if (count($byLimit) === 2) {
+    pass("filter_transaction_accounts: limit");
+} else {
+    fail("filter_transaction_accounts: limit failed: " . json_encode($byLimit));
+}
+
+$byPage = pocketsmith_filter_transaction_accounts($accounts, ['page' => '2', 'per_page' => '1']);
+if (count($byPage) === 1 && $byPage[0]['id'] === 2) {
+    pass("filter_transaction_accounts: page/per_page");
+} else {
+    fail("filter_transaction_accounts: page/per_page failed: " . json_encode($byPage));
+}
+
 // --- End-to-End MCP API Feature Test ---
 // Supply a token/user_id directly to test against the live API without the OAuth flow:
 //   php test_pocketsmith.php --token=YOUR_ACCESS_TOKEN --user_id=85571

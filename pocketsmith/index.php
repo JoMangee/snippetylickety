@@ -272,8 +272,16 @@ if (!empty($action)) {
             $method = $action;
             $args = pocketsmith_build_tool_args($_GET);
         }
-        
-        echo json_encode(pocketsmith_mcp_request($session['access_token'], $method, $args));
+
+        $mcpResult = pocketsmith_mcp_request($session['access_token'], $method, $args);
+
+        // list_transaction_accounts has no server-side filters, so filter/paginate the fetched list here.
+        if (!$raw_mode && $method === 'list_transaction_accounts') {
+            $accounts = pocketsmith_filter_transaction_accounts(pocketsmith_extract_mcp_items($mcpResult['response'] ?? []), $_GET);
+            echo json_encode(['status' => $mcpResult['status'], 'count' => count($accounts), 'transaction_accounts' => $accounts]);
+        } else {
+            echo json_encode($mcpResult);
+        }
     } else {
         echo json_encode(pocketsmith_mcp_request($session['access_token'], 'list_accounts', [], true));
     }

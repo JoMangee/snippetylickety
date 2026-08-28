@@ -257,3 +257,58 @@ function pocketsmith_build_tool_args(array $get): array {
 
     return $args;
 }
+
+// Unwraps a decoded pocketsmith_mcp_request() response into a plain items array.
+// The real MCP tools/call envelope nests JSON as result.content[0].text, prefixed with
+// a "Page X of Y (N total)" header line before the actual JSON array/object.
+function pocketsmith_extract_mcp_items(array $response): array {
+    $result = $response['result'] ?? null;
+    if (!is_array($result)) {
+        return [];
+    }
+
+    // Direct JSON-RPC method style: result is already the plain list of items.
+    if ($result === array_values($result)) {
+        return $result;
+    }
+
+    $text = $result['content'][0]['text'] ?? null;
+    if (!is_string($text)) {
+        return [];
+    }
+
+    $jsonStart = strcspn($text, '[{');
+    $decoded = json_decode(substr($text, $jsonStart), true);
+
+    return is_array($decoded) ? $decoded : [];
+}
+
+// Client-side filtering for tools (like list_transaction_accounts) that don't support server-side filters.
+function pocketsmith_filter_transaction_accounts(array $accounts, array $get): array {
+    if (isset($get['account_id']) && is_numeric($get['account_id'])) {
+        $accountId = (int)$get['account_id'];
+        $accounts = array_values(array_filter($accounts, function ($account) use ($accountId) {
+            return (int)($account['id'] ?? 0) === $accountId;
+        }));
+    }
+
+    if (isset($get['search']) && $get['search'] !== '') {
+        $search = strtolower(trim((string)$get['search']));
+        $accounts = array_values(array_filter($accounts, function ($account) use ($search) {
+            $haystack = strtolower(($account['name'] ?? '') . ' ' . ($account['institution']['title'] ?? ''));
+            return strpos($haystack, $search) !== false;
+        }));
+    }
+
+    if (isset($get['page']) && is_numeric($get['page'])) {
+        $perPage = (isset($get['per_page']) && is_numeric($get['per_page'])) ? (int)$get['per_page'] : 25;
+        $page = max(1, (int)$get['page']);
+        $accounts = array_slice($accounts, ($page - 1) * $perPage, $perPage);
+    }
+
+    if (isset($get['limit']) && is_numeric($get['limit'])) {
+        $accounts = array_slice($accounts, 0, (int)$get['limit']);
+    }
+
+    return array_values($accounts);
+}
