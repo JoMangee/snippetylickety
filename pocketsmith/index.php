@@ -270,7 +270,7 @@ if (!empty($action)) {
         } else {
             // Use PocketSmith MCP tool names directly (e.g. list_accounts, get_current_user).
             $method = $action;
-            $args = (isset($_GET['user_id'])) ? ['user_id' => (int)$_GET['user_id']] : [];
+            $args = pocketsmith_build_tool_args($_GET);
         }
         
         echo json_encode(pocketsmith_mcp_request($session['access_token'], $method, $args));

@@ -233,3 +233,27 @@ function pocketsmith_get_valid_token(): ?string {
 
     return (string)$session['access_token'];
 }
+
+// Forwards query params (minus bridge-control keys) as MCP tool arguments, so any tool's own filters just work.
+function pocketsmith_build_tool_args(array $get): array {
+    $reserved = ['action', 'secret', 'bot_token'];
+    $intFields = [
+        'user_id', 'page', 'interval', 'account_id', 'category_id',
+        'transaction_account_id', 'uncategorised', 'needs_review',
+        'since_id', 'per_page', 'limit',
+    ];
+
+    $args = [];
+    foreach ($get as $key => $value) {
+        if (in_array($key, $reserved, true) || !is_scalar($value)) {
+            continue;
+        }
+        if (in_array($key, $intFields, true) && is_numeric($value)) {
+            $args[$key] = (int)$value;
+        } else {
+            $args[$key] = trim((string)$value);
+        }
+    }
+
+    return $args;
+}
