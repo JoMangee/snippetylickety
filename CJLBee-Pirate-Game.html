@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- saved from url=/Downloads/CJLBee-Pirate-Game.html -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CJLBee's Pirate Game</title>
 <style>
@@ -48,36 +48,37 @@ button:disabled{opacity:.4;cursor:not-allowed}
 </head>
 <body>
 <h1>PIRATE GAME</h1>
-<p class="sub">Cooper's invention - you vs the AI pirate - most doubloons after 30 turns wins</p>
-<div class="turn" id="turn">Turn 1 of 30 - Your move</div>
+<p class="sub">Cooper's invention - you vs the AI pirate - one roll, same square for both - most doubloons after 30 turns</p>
+<div class="turn" id="turn"></div>
 <div class="layout">
 <div class="board you"><h2><span>YOU</span><span id="youTag"></span></h2>
 <div class="scores"><div class="stat"><div class="l">Cash</div><div class="v cash" id="youCash">0</div></div><div class="stat"><div class="l">Bank</div><div class="v bank" id="youBank">0</div></div><div class="stat"><div class="l">Total</div><div class="v total" id="youTotal">0</div></div></div>
-<div class="grid" id="youGrid"><div class="cell n">-1</div><div class="cell swp">RANDOM</div><div class="cell sp">x2</div><div class="cell p">+50</div><div class="cell p">+50</div><div class="cell sp">x3</div><div class="cell n">-25</div><div class="cell swp">SWAP</div><div class="cell p">+50</div><div class="cell p">+25</div><div class="cell n">-100</div><div class="cell n">-2</div><div class="cell p">+10</div><div class="cell p">+10</div><div class="cell p">+25</div><div class="cell p">+10</div><div class="cell p">+10</div><div class="cell atk">ATTACK</div><div class="cell p">+10</div><div class="cell p">+25</div><div class="cell n">-2</div><div class="cell p">+100</div><div class="cell n">-1</div><div class="cell p">+50</div><div class="cell p">+50</div><div class="cell p">+10</div><div class="cell p">+25</div><div class="cell p">+10</div><div class="cell rob">ROB</div><div class="cell bomb">BOMB</div><div class="cell n">-15</div><div class="cell p">+10</div><div class="cell p">+1000</div></div></div>
+<div class="grid" id="youGrid"></div></div>
 <div class="board ai"><h2><span>AI PIRATE</span><span id="aiTag"></span></h2>
 <div class="scores"><div class="stat"><div class="l">Cash</div><div class="v cash" id="aiCash">0</div></div><div class="stat"><div class="l">Bank</div><div class="v bank" id="aiBank">0</div></div><div class="stat"><div class="l">Total</div><div class="v total" id="aiTotal">0</div></div></div>
-<div class="grid" id="aiGrid"><div class="cell atk hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell swp hid">?</div><div class="cell n hid">?</div><div class="cell n hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell n hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell sp hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell rob hid">?</div><div class="cell swp hid">?</div><div class="cell bomb hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell n hid">?</div><div class="cell n hid">?</div><div class="cell p hid">?</div><div class="cell n hid">?</div><div class="cell n hid">?</div><div class="cell sp hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div></div></div>
+<div class="grid" id="aiGrid"></div></div>
 </div>
 <div class="controls">
 <button id="roll">ROLL</button>
 <button id="bank">BANK (skip roll)</button>
 <button id="new">NEW GAME</button>
 </div>
-<div class="log"><h3>Ship's Log</h3><ul id="shipLog"><li>New game! 30 turns. Most doubloons wins.</li></ul></div>
-<div class="banner" id="banner" style="display: none;"></div>
+<div class="log"><h3>Ship's Log</h3><ul id="shipLog"></ul></div>
+<div class="banner" id="banner"></div>
 <script>
 const $=q=>document.querySelector(q);
 const COLS='ABCDEFGHIJ';
 const SPEC=[{v:1000,n:1},{v:100,n:1},{v:50,n:5},{v:25,n:4},{v:10,n:8},{v:-100,n:1},{v:-25,n:1},{v:-15,n:1},{v:-2,n:2},{v:-1,n:2}];
 const ACTS=[{k:'atk',n:1},{k:'rob',n:1},{k:'swp',n:1},{k:'swr',n:1},{k:'bomb',n:1},{k:'x2',n:1},{k:'x3',n:1}];
 let you={cash:0,bank:0,grid:[],used:new Set(),bankLock:null},ai={cash:0,bank:0,grid:[],used:new Set(),bankLock:null};
-let turn=1,totalTurns=30,turnPlayer='you',lastRoll=null,gameOver=false;
+let turn=1,totalTurns=30,lastRoll=null,gameOver=false;
 function rnd(n){return Math.floor(Math.random()*n)}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 function makeGrid(){
 const items=[];
 SPEC.forEach(s=>{for(let i=0;i<s.n;i++)items.push({type:'p',v:s.v})});
 ACTS.forEach(a=>{for(let i=0;i<a.n;i++)items.push({type:a.k,v:0})});
+while(items.length<100)items.push({type:'e',v:0});
 return shuffle(items);
 }
 function fmt(n){return n<0?'-'+Math.abs(n):String(n)}
@@ -99,7 +100,7 @@ if(c.type==='rob')return 'rob';
 if(c.type==='atk')return 'atk';
 if(c.type==='swp'||c.type==='swr')return 'swp';
 if(c.type==='x2'||c.type==='x3')return 'sp';
-return '';
+return 'b';
 }
 function render(){
 ['you','ai'].forEach(p=>{
@@ -108,68 +109,76 @@ const grid=$('#'+p+'Grid');
 grid.innerHTML='';
 pl.grid.forEach((c,i)=>{
 const d=document.createElement('div');
-d.className='cell '+cellClass(c)+(p==='ai'&&!pl.used.has(i)?' hid':'')+(lastRoll===i&&p===turnPlayer?' hit':'');
+d.className='cell '+cellClass(c)+(p==='ai'&&!pl.used.has(i)?' hid':'')+(lastRoll===i?' hit':'');
 d.textContent=p==='ai'&&!pl.used.has(i)?'?':cellLabel(c);
 grid.appendChild(d);
 });
 $('#'+p+'Cash').textContent=fmt(pl.cash);
 $('#'+p+'Bank').textContent=fmt(pl.bank);
 $('#'+p+'Total').textContent=fmt(pl.cash+pl.bank);
-$('#'+p+'Tag').textContent=p==='you'?(pl.bankLock?('BANK '+pl.bankLock+'t'):''):'';
+$('#'+p+'Tag').textContent=(pl.bankLock?('BANK '+pl.bankLock+'t'):'');
 });
-$('#turn').textContent=gameOver?'Game over':('Turn '+turn+' of '+totalTurns+' - '+(turnPlayer==='you'?'Your move':'AI pirate move'));
+$('#turn').textContent=gameOver?'Game over':('Turn '+turn+' of '+totalTurns+' - roll or bank');
 $('#banner').style.display='none';
 }
 function log(msg){const li=document.createElement('li');li.textContent=msg;$('#shipLog').prepend(li)}
-function logTurn(p,coord,label){log((p==='you'?'You':'AI')+' rolled '+coord+' ('+label+')')}
+function tickLocks(){
+[you,ai].forEach(pl=>{
+if(pl.bankLock){pl.bankLock--;if(pl.bankLock===0){pl.cash+=pl.bank;pl.bank=0;pl.bankLock=null;log((pl===you?'You':'AI')+' banked money returned to cash!')}}
+});
+}
 function resolveCell(pl,opp,coord){
 const c=pl.grid[coord];
 pl.used.add(coord);
 let msg='';
-if(c.type==='p'){if(c.v>0){pl.cash+=c.v;msg='+'+c.v+' doubloons to cash'}else{pl.cash=Math.max(0,pl.cash+c.v);msg=c.v+' from cash'}}
-else if(c.type==='x2'){pl.cash*=2;msg='DOUBLE! cash x2'}
-else if(c.type==='x3'){pl.cash*=3;msg='TRIPLE! cash x3'}
-else if(c.type==='bomb'){pl.cash=0;msg='BOMB! cash to zero'}
+if(c.type==='p'){if(c.v>0){pl.cash+=c.v;msg='+'+c.v} else {pl.cash=Math.max(0,pl.cash+c.v);msg=fmt(c.v)}}
+else if(c.type==='x2'){pl.cash*=2;msg='DOUBLE x2'}
+else if(c.type==='x3'){pl.cash*=3;msg='TRIPLE x3'}
+else if(c.type==='bomb'){pl.cash=0;msg='BOMB to zero'}
 else if(c.type==='rob'){const amt=Math.floor(opp.cash/2);opp.cash-=amt;pl.cash+=amt;msg='robbed '+amt+' from opponent'}
-else if(c.type==='atk'){const dmg=Math.floor(opp.cash/4);opp.cash=Math.max(0,opp.cash-dmg);msg='attacked! opponent lost '+dmg}
+else if(c.type==='atk'){const dmg=Math.floor(opp.cash/4);opp.cash=Math.max(0,opp.cash-dmg);msg='attacked, opponent lost '+dmg}
 else if(c.type==='swp'){const t=pl.cash;pl.cash=opp.cash;opp.cash=t;msg='swapped scores with opponent'}
-else if(c.type==='swr'){const t=pl.cash;pl.cash=opp.cash;opp.cash=t;msg='swapped with RANDOM player'}
+else if(c.type==='swr'){const t=pl.cash;pl.cash=opp.cash;opp.cash=t;msg='swapped with RANDOM'}
+else{msg='nothing'}
 return msg;
 }
-function rollFor(p){
-const pl=p==='you'?you:ai,opp=p==='you'?ai:you;
-if(pl.bankLock){pl.bankLock--;if(pl.bankLock===0){pl.cash+=pl.bank;pl.bank=0;pl.bankLock=null;log((p==='you'?'You':'AI')+' banked money returned to cash!')}}
+function doRoll(){
+if(gameOver)return;
+tickLocks();
+if(ai.cash>=100&&!ai.bankLock&&Math.random()<0.35){ai.bank=ai.cash;ai.cash=0;ai.bankLock=3;log('AI banked its cash (returns in 3 turns)')}
 const coord=rnd(100);
-const c=pl.grid[coord];
-logTurn(p,COLS[coord%10]+(Math.floor(coord/10)+1),cellLabel(c));
-const msg=resolveCell(pl,opp,coord);
-log(msg);
 lastRoll=coord;
+const label=COLS[coord%10]+(Math.floor(coord/10)+1);
+log('Rolled '+label+' - both boards play this square');
+log('You: '+resolveCell(you,ai,coord));
+log('AI: '+resolveCell(ai,you,coord));
+turn++;
 render();
+checkEnd();
 }
-function bankFor(p){
-const pl=p==='you'?you:ai;
-if(pl.bankLock)return;
-pl.bank=pl.cash;pl.cash=0;pl.bankLock=3;
-log((p==='you'?'You':'AI')+' banked all cash (returns in 3 turns)');
+function doBank(){
+if(gameOver||you.bankLock)return;
+tickLocks();
+you.bank=you.cash;you.cash=0;you.bankLock=3;
+log('You banked all cash (returns in 3 turns)');
+turn++;
 render();
+checkEnd();
 }
-function aiTurn(){setTimeout(()=>{if(gameOver)return;rollFor('ai');turnPlayer='you';turn++;render();checkEnd()},600)}
-function nextTurn(){if(gameOver)return;if(turnPlayer==='you'){turnPlayer='ai';render();aiTurn()}else{turnPlayer='you';render()}}
 function checkEnd(){if(turn>totalTurns){gameOver=true;const yt=you.cash+you.bank,at=ai.cash+ai.bank;let w='';if(yt>at)w='YOU WIN!';else if(at>yt)w='AI PIRATE WINS!';else w='DRAW!';$('#banner').textContent=w+' You '+yt+' - AI '+at;$('#banner').style.display='block';$('#roll').disabled=true;$('#bank').disabled=true;log(w)}}
 function newGame(){
 you.cash=0;you.bank=0;you.grid=makeGrid();you.used=new Set();you.bankLock=null;
 ai.cash=0;ai.bank=0;ai.grid=makeGrid();ai.used=new Set();ai.bankLock=null;
-turn=1;turnPlayer='you';lastRoll=null;gameOver=false;
+turn=1;lastRoll=null;gameOver=false;
 $('#shipLog').innerHTML='';
 $('#roll').disabled=false;$('#bank').disabled=false;
-log('New game! 30 turns. Most doubloons wins.');
+log('New game! 30 turns. One roll, both boards play the same square.');
 render();
 }
-$('#roll').onclick=()=>{if(gameOver||turnPlayer!=='you')return;rollFor('you');nextTurn()};
-$('#bank').onclick=()=>{if(gameOver||turnPlayer!=='you')return;bankFor('you');nextTurn()};
+$('#roll').onclick=doRoll;
+$('#bank').onclick=doBank;
 $('#new').onclick=newGame;
 newGame();
 </script>
-
-</body></html>
+</body>
+</html>
