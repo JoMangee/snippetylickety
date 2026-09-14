@@ -3,64 +3,68 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CJLBee's Pirate Game</title>
+<title>CJLBee's Pirate Game v4</title>
 <style>
-:root{--bg:#0b0f14;--panel:#141a22;--card:#1c242f;--line:#2b3542;--gold:#f5b83d;--green:#3fb950;--red:#f85149;--blue:#58a6ff;--dim:#8b949e}
+:root{--bg:#0b0f14;--panel:#141a22;--card:#1c242f;--line:#2b3542;--gold:#f5b83d;--green:#3fb950;--red:#f85149;--blue:#58a6ff;--purple:#c9a6ff;--dim:#8b949e}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:#e6edf3;font-family:system-ui,sans-serif;padding:14px;max-width:1100px;margin:0 auto}
+body{background:var(--bg);color:#e6edf3;font-family:system-ui,sans-serif;padding:14px;max-width:1300px;margin:0 auto}
 h1{font-size:22px;color:var(--gold);text-align:center}
-.sub{text-align:center;color:var(--dim);font-size:12px;margin-bottom:12px}
-.layout{display:flex;gap:14px;flex-wrap:wrap}
-.board{flex:1;min-width:320px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
-.board h2{font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between}
-.you h2{color:var(--green)}.ai h2{color:var(--red)}
-.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px}
-.cell{aspect-ratio:1;background:var(--card);border:1px solid var(--line);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;overflow:hidden}
+.sub{text-align:center;color:var(--dim);font-size:12px;margin-bottom:10px}
+.modes{display:flex;gap:8px;margin-bottom:12px}
+.mode{flex:1;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;color:#e6edf3}
+.mode:hover{border-color:var(--gold);color:var(--gold)}
+.turn{text-align:center;font-size:14px;color:var(--dim);margin:8px 0;font-weight:700}
+.layout{display:flex;gap:12px;flex-wrap:wrap}
+.board{flex:1;min-width:300px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px}
+.board.active{border-color:var(--gold);box-shadow:0 0 10px rgba(245,184,61,.25)}
+.board h2{font-size:13px;margin-bottom:6px;display:flex;justify-content:space-between}
+.b0 h2{color:var(--green)}.b1 h2{color:var(--blue)}.b2 h2{color:var(--red)}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:2px}
+.cell{aspect-ratio:1;background:var(--card);border:1px solid var(--line);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;overflow:hidden}
 .cell.b{color:#3a4553}.cell.p{color:var(--green)}.cell.n{color:var(--red)}
 .cell.bomb{background:#3a1416;color:#ff9ea2;border-color:#6b1f24}
 .cell.rob{background:#2b1a0f;color:var(--gold)}
 .cell.atk{background:#16233a;color:var(--blue)}
-.cell.swp{background:#1d1b33;color:#c9a6ff}
+.cell.swp{background:#1d1b33;color:var(--purple)}
 .cell.sp{color:var(--gold)}
-.cell.hid{background:repeating-linear-gradient(45deg,#1c242f,#1c242f 4px,#222c38 4px,#222c38 8px);color:transparent}
 .cell.hit{outline:2px solid var(--gold);outline-offset:-2px}
-.scores{display:flex;gap:8px;margin:10px 0}
-.stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center}
-.stat .l{font-size:10px;color:var(--dim);text-transform:uppercase}
-.stat .v{font-size:18px;font-weight:800}
+.scores{display:flex;gap:6px;margin:8px 0}
+.stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center}
+.stat .l{font-size:9px;color:var(--dim);text-transform:uppercase}
+.stat .v{font-size:15px;font-weight:800}
 .stat .cash{color:var(--green)}.stat .bank{color:var(--blue)}.stat .total{color:var(--gold)}
-.controls{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-button{flex:1;min-width:110px;background:var(--card);color:#e6edf3;border:1px solid var(--line);border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer}
+.controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+button{flex:1;min-width:100px;background:var(--card);color:#e6edf3;border:1px solid var(--line);border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer}
 button:hover:not(:disabled){border-color:var(--gold);color:var(--gold)}
-button:disabled{opacity:.4;cursor:not-allowed}
+button:disabled{opacity:.35;cursor:not-allowed}
 #roll{background:#3a1620;border-color:#da3633}
 #roll:hover:not(:disabled){background:#da3633;color:#fff}
 #bank{background:#1f3a2a;border-color:#2ea043}
 #bank:hover:not(:disabled){background:#2ea043;color:#fff}
-.log{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:14px}
+#handoff{background:#2b1a0f;border-color:var(--gold)}
+#handoff:hover:not(:disabled){background:var(--gold);color:#0b0f14}
+.log{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
 .log h3{font-size:13px;color:var(--dim);margin-bottom:8px}
-#shipLog{list-style:none;max-height:200px;overflow-y:auto;font-size:13px}
-#shipLog li{padding:4px 0;border-bottom:1px solid #1b2330}
+#shipLog{list-style:none;max-height:220px;overflow-y:auto;font-size:12px}
+#shipLog li{padding:3px 0;border-bottom:1px solid #1b2330}
 #shipLog li:last-child{border:none}
-.turn{text-align:center;font-size:13px;color:var(--dim);margin:10px 0}
 .banner{display:none;text-align:center;background:var(--gold);color:#0b0f14;font-weight:800;border-radius:10px;padding:12px;margin-top:12px;font-size:16px}
 </style>
 </head>
 <body>
-<h1>PIRATE GAME</h1>
-<p class="sub">Cooper's invention - you vs the AI pirate - one roll, same square for both - most doubloons after 30 turns</p>
-<div class="turn" id="turn"></div>
-<div class="layout">
-<div class="board you"><h2><span>YOU</span><span id="youTag"></span></h2>
-<div class="scores"><div class="stat"><div class="l">Cash</div><div class="v cash" id="youCash">0</div></div><div class="stat"><div class="l">Bank</div><div class="v bank" id="youBank">0</div></div><div class="stat"><div class="l">Total</div><div class="v total" id="youTotal">0</div></div></div>
-<div class="grid" id="youGrid"></div></div>
-<div class="board ai"><h2><span>AI PIRATE</span><span id="aiTag"></span></h2>
-<div class="scores"><div class="stat"><div class="l">Cash</div><div class="v cash" id="aiCash">0</div></div><div class="stat"><div class="l">Bank</div><div class="v bank" id="aiBank">0</div></div><div class="stat"><div class="l">Total</div><div class="v total" id="aiTotal">0</div></div></div>
-<div class="grid" id="aiGrid"></div></div>
+<h1>PIRATE GAME v4</h1>
+<p class="sub">Cooper's invention - hotseat multiplayer - one roll, everyone plays the same square - play on past 30 turns</p>
+<div class="modes">
+<button class="mode" id="mSolo">SOLO vs BOT</button>
+<button class="mode" id="m2p">2 PLAYERS</button>
+<button class="mode" id="m2b">2 + BOT</button>
 </div>
+<div class="turn" id="turn"></div>
+<div class="layout" id="layout"></div>
 <div class="controls">
 <button id="roll">ROLL</button>
-<button id="bank">BANK (skip roll)</button>
+<button id="bank">BANK</button>
+<button id="handoff">HAND OFF</button>
 <button id="new">NEW GAME</button>
 </div>
 <div class="log"><h3>Ship's Log</h3><ul id="shipLog"></ul></div>
@@ -70,8 +74,7 @@ const $=q=>document.querySelector(q);
 const COLS='ABCDEFGHIJ';
 const SPEC=[{v:1000,n:1},{v:100,n:1},{v:50,n:5},{v:25,n:4},{v:10,n:8},{v:-100,n:1},{v:-25,n:1},{v:-15,n:1},{v:-2,n:2},{v:-1,n:2}];
 const ACTS=[{k:'atk',n:1},{k:'rob',n:1},{k:'swp',n:1},{k:'swr',n:1},{k:'bomb',n:1},{k:'x2',n:1},{k:'x3',n:1}];
-let you={cash:0,bank:0,grid:[],used:new Set(),bankLock:null,bankCd:0},ai={cash:0,bank:0,grid:[],used:new Set(),bankLock:null,bankCd:0};
-let turn=1,totalTurns=30,lastRoll=null,gameOver=false;
+let players=[],activeIdx=0,turn=1,totalTurns=30,lastRoll=null,hasActed=false,gameOver=false,playOn=false;
 function rnd(n){return Math.floor(Math.random()*n)}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 function makeGrid(){
@@ -102,36 +105,46 @@ if(c.type==='swp'||c.type==='swr')return 'swp';
 if(c.type==='x2'||c.type==='x3')return 'sp';
 return 'b';
 }
+function othersOf(pl){return players.filter(p=>p!==pl)}
+function richestOther(pl){const os=othersOf(pl);if(!os.length)return null;let b=os[0];os.forEach(o=>{if(o.cash>b.cash)b=o});return b}
 function render(){
-['you','ai'].forEach(p=>{
-const pl=p==='you'?you:ai;
-const grid=$('#'+p+'Grid');
-grid.innerHTML='';
-pl.grid.forEach((c,i)=>{
+const layout=$('#layout');
+layout.innerHTML='';
+players.forEach((pl,i)=>{
+const b=document.createElement('div');
+b.className='board b'+i+(i===activeIdx?' active':'');
+const h=document.createElement('h2');
+h.innerHTML='<span>'+pl.name+(pl.isBot?' (BOT)':'')+'</span><span id="tag'+i+'"></span>';
+b.appendChild(h);
+const sc=document.createElement('div');sc.className='scores';
+sc.innerHTML='<div class="stat"><div class="l">Cash</div><div class="v cash">'+fmt(pl.cash)+'</div></div><div class="stat"><div class="l">Bank</div><div class="v bank">'+fmt(pl.bank)+'</div></div><div class="stat"><div class="l">Total</div><div class="v total">'+(pl.cash+pl.bank)+'</div></div>';
+b.appendChild(sc);
+const g=document.createElement('div');g.className='grid';
+pl.grid.forEach((c,ci)=>{
 const d=document.createElement('div');
-d.className='cell '+cellClass(c)+(p==='ai'&&!pl.used.has(i)?' hid':'')+(lastRoll===i?' hit':'');
-d.textContent=p==='ai'&&!pl.used.has(i)?'?':cellLabel(c);
-grid.appendChild(d);
+d.className='cell '+cellClass(c)+(lastRoll===ci?' hit':'');
+d.textContent=cellLabel(c);
+g.appendChild(d);
 });
-$('#'+p+'Cash').textContent=fmt(pl.cash);
-$('#'+p+'Bank').textContent=fmt(pl.bank);
-$('#'+p+'Total').textContent=fmt(pl.cash+pl.bank);
+b.appendChild(g);
 let tag='';
 if(pl.bankLock)tag='BANK '+pl.bankLock+'t';
 else if(pl.bankCd>0)tag='cooldown '+pl.bankCd+'t';
-$('#'+p+'Tag').textContent=tag;
+b.querySelector('#tag'+i).textContent=tag;
+layout.appendChild(b);
 });
-$('#turn').textContent=gameOver?'Game over':('Turn '+turn+' of '+totalTurns+' - roll or bank');
+const pn=players[activeIdx]?players[activeIdx].name:'?';
+$('#turn').textContent=(turn>totalTurns&&!playOn?'PLAY ON - ':'')+'Turn '+turn+(turn>totalTurns?'+':' of '+totalTurns)+' - '+pn+((players[activeIdx]&&players[activeIdx].isBot)?' (bot)':'')+(hasActed?' - press HAND OFF':' - roll or bank');
 $('#banner').style.display='none';
 }
 function log(msg){const li=document.createElement('li');li.textContent=msg;$('#shipLog').prepend(li)}
 function tickLocks(){
-[you,ai].forEach(pl=>{
+players.forEach(pl=>{
 if(pl.bankCd>0)pl.bankCd--;
-if(pl.bankLock){pl.bankLock--;if(pl.bankLock===0){pl.cash+=pl.bank;pl.bank=0;pl.bankLock=null;pl.bankCd=2;log((pl===you?'You':'AI')+' banked money returned to cash! 2-turn cooldown before you can bank again')}}
+if(pl.bankLock){pl.bankLock--;if(pl.bankLock===0){pl.cash+=pl.bank;pl.bank=0;pl.bankLock=null;pl.bankCd=2;log(pl.name+' banked money returned to cash! 2-turn cooldown')}}
 });
 }
-function resolveCell(pl,opp,coord){
+function resolveCell(pl,coord){
 const c=pl.grid[coord];
 pl.used.add(coord);
 let msg='';
@@ -139,50 +152,72 @@ if(c.type==='p'){if(c.v>0){pl.cash+=c.v;msg='+'+c.v} else {pl.cash=Math.max(0,pl
 else if(c.type==='x2'){pl.cash*=2;msg='DOUBLE x2'}
 else if(c.type==='x3'){pl.cash*=3;msg='TRIPLE x3'}
 else if(c.type==='bomb'){pl.cash=0;msg='BOMB to zero'}
-else if(c.type==='rob'){const amt=Math.floor(opp.cash/2);opp.cash-=amt;pl.cash+=amt;msg='robbed '+amt+' cash from opponent (bank is safe)'}
-else if(c.type==='atk'){const dmg=Math.floor(opp.cash/4);opp.cash=Math.max(0,opp.cash-dmg);msg='attacked, opponent lost '+dmg}
-else if(c.type==='swp'){const t=pl.cash;pl.cash=opp.cash;opp.cash=t;msg='swapped scores with opponent'}
-else if(c.type==='swr'){const t=pl.cash;pl.cash=opp.cash;opp.cash=t;msg='swapped with RANDOM'}
-else{msg='nothing'}
+else if(c.type==='rob'){const t=richestOther(pl);if(t){const amt=Math.floor(t.cash/2);t.cash-=amt;pl.cash+=amt;msg='robbed '+amt+' cash from '+t.name+' (bank safe)'}else msg='no one to rob'}
+else if(c.type==='atk'){const t=richestOther(pl);if(t){const dmg=Math.floor(t.cash/4);t.cash=Math.max(0,t.cash-dmg);msg='attacked '+t.name+', they lost '+dmg}else msg='no one to attack'}
+else if(c.type==='swp'){const os=othersOf(pl);if(os.length){const t=os[rnd(os.length)];const tmp=pl.cash;pl.cash=t.cash;t.cash=tmp;msg='swapped cash with '+t.name}else msg='no one to swap'}
+else if(c.type==='swr'){const os=othersOf(pl);if(os.length){const t=os[rnd(os.length)];const tmp=pl.cash;pl.cash=t.cash;t.cash=tmp;msg='swapped with RANDOM ('+t.name+')'}else msg='no one to swap'}
+else{msg='nothing here'}
 return msg;
 }
 function doRoll(){
-if(gameOver)return;
+if(gameOver||hasActed)return;
+const pl=players[activeIdx];
 tickLocks();
-if(ai.cash>=100&&!ai.bankLock&&ai.bankCd<=0&&Math.random()<0.35){ai.bank=ai.cash;ai.cash=0;ai.bankLock=3;log('AI banked its cash (returns in 3 turns)')}
+if(pl.isBot&&pl.cash>=100&&!pl.bankLock&&pl.bankCd<=0&&Math.random()<0.35){pl.bank=pl.cash;pl.cash=0;pl.bankLock=3;log(pl.name+' banked its cash (returns in 3 turns)')}
 const coord=rnd(100);
 lastRoll=coord;
 const label=COLS[coord%10]+(Math.floor(coord/10)+1);
-log('Rolled '+label+' - both boards play this square');
-log('You: '+resolveCell(you,ai,coord));
-log('AI: '+resolveCell(ai,you,coord));
-turn++;
+log('Turn '+turn+': '+pl.name+' rolled '+label+' - everyone plays this square');
+players.forEach(p=>{log(' '+p.name+': '+resolveCell(p,coord))});
+hasActed=true;
+if(turn<=totalTurns)turn++;
 render();
-checkEnd();
 }
 function doBank(){
-if(gameOver||you.bankLock||you.bankCd>0){if(you.bankCd>0)log('Still on cooldown - '+you.bankCd+' turns to go');return;}
+if(gameOver||hasActed)return;
+const pl=players[activeIdx];
+if(pl.bankLock){log(pl.name+' - money already in bank');return}
+if(pl.bankCd>0){log(pl.name+' - bank on cooldown, '+pl.bankCd+' turns to go');return}
 tickLocks();
-you.bank=you.cash;you.cash=0;you.bankLock=3;
-log('You banked all cash (returns in 3 turns)');
-turn++;
+pl.bank=pl.cash;pl.cash=0;pl.bankLock=3;
+log(pl.name+' banked all cash (returns in 3 turns)');
+hasActed=true;
+if(turn<=totalTurns)turn++;
 render();
-checkEnd();
 }
-function checkEnd(){if(turn>totalTurns){gameOver=true;const yt=you.cash+you.bank,at=ai.cash+ai.bank;let w='';if(yt>at)w='YOU WIN!';else if(at>yt)w='AI PIRATE WINS!';else w='DRAW!';$('#banner').textContent=w+' You '+yt+' - AI '+at;$('#banner').style.display='block';$('#roll').disabled=true;$('#bank').disabled=true;log(w)}}
-function newGame(){
-you.cash=0;you.bank=0;you.grid=makeGrid();you.used=new Set();you.bankLock=null;you.bankCd=0;
-ai.cash=0;ai.bank=0;ai.grid=makeGrid();ai.used=new Set();ai.bankLock=null;ai.bankCd=0;
-turn=1;lastRoll=null;gameOver=false;
+function handOff(){
+if(!hasActed){log('roll or bank first');return}
+if(players.length===1)return;
+activeIdx=(activeIdx+1)%players.length;
+hasActed=false;
+lastRoll=null;
+if(turn>totalTurns&&!playOn){playOn=true;log('30 turns done - PLAY ON!');$('#banner').textContent='PLAY ON! 30 turns done - keep going';$('#banner').style.display='block'}
+render();
+if(players[activeIdx].isBot)setTimeout(botTurn,700);
+}
+function botTurn(){if(gameOver||!players[activeIdx].isBot)return;if(!hasActed)doRoll();setTimeout(handOff,700)}
+function newGame(mode){
+players=[];
+const p1={name:'P1',cash:0,bank:0,grid:makeGrid(),used:new Set(),bankLock:null,bankCd:0,isBot:false};
+players.push(p1);
+if(mode===1||mode===2){const p2={name:'P2',cash:0,bank:0,grid:makeGrid(),used:new Set(),bankLock:null,bankCd:0,isBot:false};players.push(p2)}
+if(mode===0){const b={name:'BOT',cash:0,bank:0,grid:makeGrid(),used:new Set(),bankLock:null,bankCd:0,isBot:true};players.push(b)}
+if(mode===2){const b={name:'BOT',cash:0,bank:0,grid:makeGrid(),used:new Set(),bankLock:null,bankCd:0,isBot:true};players.push(b)}
+activeIdx=0;turn=1;lastRoll=null;hasActed=false;gameOver=false;playOn=false;
 $('#shipLog').innerHTML='';
-$('#roll').disabled=false;$('#bank').disabled=false;
-log('New game! 30 turns. One roll, both boards play the same square. Bank returns after 3 turns, then 2-turn cooldown.');
+$('#banner').style.display='none';
+const names=players.map(p=>p.name+(p.isBot?' (bot)':'')).join(' vs ');
+log('New game! '+names+'. Everyone plays the same square each roll. 30 turns, then play on.');
 render();
 }
 $('#roll').onclick=doRoll;
 $('#bank').onclick=doBank;
-$('#new').onclick=newGame;
-newGame();
+$('#handoff').onclick=handOff;
+$('#new').onclick=()=>newGame(players.length===2&&players[1].isBot?0:(players.length===3?2:1));
+$('#mSolo').onclick=()=>newGame(0);
+$('#m2p').onclick=()=>newGame(1);
+$('#m2b').onclick=()=>newGame(2);
+newGame(1);
 </script>
 </body>
 </html>
