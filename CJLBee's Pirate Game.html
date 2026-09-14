@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<!-- saved from url=/Downloads/CJLBee-Pirate-Game.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CJLBee's Pirate Game</title>
+<style>
+:root{--bg:#0b0f14;--panel:#141a22;--card:#1c242f;--line:#2b3542;--gold:#f5b83d;--green:#3fb950;--red:#f85149;--blue:#58a6ff;--dim:#8b949e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:#e6edf3;font-family:system-ui,sans-serif;padding:14px;max-width:1100px;margin:0 auto}
+h1{font-size:22px;color:var(--gold);text-align:center}
+.sub{text-align:center;color:var(--dim);font-size:12px;margin-bottom:12px}
+.layout{display:flex;gap:14px;flex-wrap:wrap}
+.board{flex:1;min-width:320px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.board h2{font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between}
+.you h2{color:var(--green)}.ai h2{color:var(--red)}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px}
+.cell{aspect-ratio:1;background:var(--card);border:1px solid var(--line);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;overflow:hidden}
+.cell.b{color:#3a4553}.cell.p{color:var(--green)}.cell.n{color:var(--red)}
+.cell.bomb{background:#3a1416;color:#ff9ea2;border-color:#6b1f24}
+.cell.rob{background:#2b1a0f;color:var(--gold)}
+.cell.atk{background:#16233a;color:var(--blue)}
+.cell.swp{background:#1d1b33;color:#c9a6ff}
+.cell.sp{color:var(--gold)}
+.cell.hid{background:repeating-linear-gradient(45deg,#1c242f,#1c242f 4px,#222c38 4px,#222c38 8px);color:transparent}
+.cell.hit{outline:2px solid var(--gold);outline-offset:-2px}
+.scores{display:flex;gap:8px;margin:10px 0}
+.stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center}
+.stat .l{font-size:10px;color:var(--dim);text-transform:uppercase}
+.stat .v{font-size:18px;font-weight:800}
+.stat .cash{color:var(--green)}.stat .bank{color:var(--blue)}.stat .total{color:var(--gold)}
+.controls{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+button{flex:1;min-width:110px;background:var(--card);color:#e6edf3;border:1px solid var(--line);border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--gold);color:var(--gold)}
+button:disabled{opacity:.4;cursor:not-allowed}
+#roll{background:#3a1620;border-color:#da3633}
+#roll:hover:not(:disabled){background:#da3633;color:#fff}
+#bank{background:#1f3a2a;border-color:#2ea043}
+#bank:hover:not(:disabled){background:#2ea043;color:#fff}
+.log{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:14px}
+.log h3{font-size:13px;color:var(--dim);margin-bottom:8px}
+#shipLog{list-style:none;max-height:200px;overflow-y:auto;font-size:13px}
+#shipLog li{padding:4px 0;border-bottom:1px solid #1b2330}
+#shipLog li:last-child{border:none}
+.turn{text-align:center;font-size:13px;color:var(--dim);margin:10px 0}
+.banner{display:none;text-align:center;background:var(--gold);color:#0b0f14;font-weight:800;border-radius:10px;padding:12px;margin-top:12px;font-size:16px}
+</style>
+</head>
+<body>
+<h1>PIRATE GAME</h1>
+<p class="sub">Cooper's invention - you vs the AI pirate - most doubloons after 30 turns wins</p>
+<div class="turn" id="turn">Turn 1 of 30 - Your move</div>
+<div class="layout">
+<div class="board you"><h2><span>YOU</span><span id="youTag"></span></h2>
+<div class="scores"><div class="stat"><div class="l">Cash</div><div class="v cash" id="youCash">0</div></div><div class="stat"><div class="l">Bank</div><div class="v bank" id="youBank">0</div></div><div class="stat"><div class="l">Total</div><div class="v total" id="youTotal">0</div></div></div>
+<div class="grid" id="youGrid"><div class="cell n">-1</div><div class="cell swp">RANDOM</div><div class="cell sp">x2</div><div class="cell p">+50</div><div class="cell p">+50</div><div class="cell sp">x3</div><div class="cell n">-25</div><div class="cell swp">SWAP</div><div class="cell p">+50</div><div class="cell p">+25</div><div class="cell n">-100</div><div class="cell n">-2</div><div class="cell p">+10</div><div class="cell p">+10</div><div class="cell p">+25</div><div class="cell p">+10</div><div class="cell p">+10</div><div class="cell atk">ATTACK</div><div class="cell p">+10</div><div class="cell p">+25</div><div class="cell n">-2</div><div class="cell p">+100</div><div class="cell n">-1</div><div class="cell p">+50</div><div class="cell p">+50</div><div class="cell p">+10</div><div class="cell p">+25</div><div class="cell p">+10</div><div class="cell rob">ROB</div><div class="cell bomb">BOMB</div><div class="cell n">-15</div><div class="cell p">+10</div><div class="cell p">+1000</div></div></div>
+<div class="board ai"><h2><span>AI PIRATE</span><span id="aiTag"></span></h2>
+<div class="scores"><div class="stat"><div class="l">Cash</div><div class="v cash" id="aiCash">0</div></div><div class="stat"><div class="l">Bank</div><div class="v bank" id="aiBank">0</div></div><div class="stat"><div class="l">Total</div><div class="v total" id="aiTotal">0</div></div></div>
+<div class="grid" id="aiGrid"><div class="cell atk hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell swp hid">?</div><div class="cell n hid">?</div><div class="cell n hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell n hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell sp hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell rob hid">?</div><div class="cell swp hid">?</div><div class="cell bomb hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell n hid">?</div><div class="cell n hid">?</div><div class="cell p hid">?</div><div class="cell n hid">?</div><div class="cell n hid">?</div><div class="cell sp hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div><div class="cell p hid">?</div></div></div>
+</div>
+<div class="controls">
+<button id="roll">ROLL</button>
+<button id="bank">BANK (skip roll)</button>
+<button id="new">NEW GAME</button>
+</div>
+<div class="log"><h3>Ship's Log</h3><ul id="shipLog"><li>New game! 30 turns. Most doubloons wins.</li></ul></div>
+<div class="banner" id="banner" style="display: none;"></div>
+<script>
+const $=q=>document.querySelector(q);
+const COLS='ABCDEFGHIJ';
+const SPEC=[{v:1000,n:1},{v:100,n:1},{v:50,n:5},{v:25,n:4},{v:10,n:8},{v:-100,n:1},{v:-25,n:1},{v:-15,n:1},{v:-2,n:2},{v:-1,n:2}];
+const ACTS=[{k:'atk',n:1},{k:'rob',n:1},{k:'swp',n:1},{k:'swr',n:1},{k:'bomb',n:1},{k:'x2',n:1},{k:'x3',n:1}];
+let you={cash:0,bank:0,grid:[],used:new Set(),bankLock:null},ai={cash:0,bank:0,grid:[],used:new Set(),bankLock:null};
+let turn=1,totalTurns=30,turnPlayer='you',lastRoll=null,gameOver=false;
+function rnd(n){return Math.floor(Math.random()*n)}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function makeGrid(){
+const items=[];
+SPEC.forEach(s=>{for(let i=0;i<s.n;i++)items.push({type:'p',v:s.v})});
+ACTS.forEach(a=>{for(let i=0;i<a.n;i++)items.push({type:a.k,v:0})});
+return shuffle(items);
+}
+function fmt(n){return n<0?'-'+Math.abs(n):String(n)}
+function cellLabel(c){
+if(c.type==='p')return c.v>0?'+'+c.v:fmt(c.v);
+if(c.type==='x2')return 'x2';
+if(c.type==='x3')return 'x3';
+if(c.type==='bomb')return 'BOMB';
+if(c.type==='rob')return 'ROB';
+if(c.type==='atk')return 'ATTACK';
+if(c.type==='swp')return 'SWAP';
+if(c.type==='swr')return 'RANDOM';
+return '';
+}
+function cellClass(c){
+if(c.type==='p')return c.v>0?'p':c.v<0?'n':'b';
+if(c.type==='bomb')return 'bomb';
+if(c.type==='rob')return 'rob';
+if(c.type==='atk')return 'atk';
+if(c.type==='swp'||c.type==='swr')return 'swp';
+if(c.type==='x2'||c.type==='x3')return 'sp';
+return '';
+}
+function render(){
+['you','ai'].forEach(p=>{
+const pl=p==='you'?you:ai;
+const grid=$('#'+p+'Grid');
+grid.innerHTML='';
+pl.grid.forEach((c,i)=>{
+const d=document.createElement('div');
+d.className='cell '+cellClass(c)+(p==='ai'&&!pl.used.has(i)?' hid':'')+(lastRoll===i&&p===turnPlayer?' hit':'');
+d.textContent=p==='ai'&&!pl.used.has(i)?'?':cellLabel(c);
+grid.appendChild(d);
+});
+$('#'+p+'Cash').textContent=fmt(pl.cash);
+$('#'+p+'Bank').textContent=fmt(pl.bank);
+$('#'+p+'Total').textContent=fmt(pl.cash+pl.bank);
+$('#'+p+'Tag').textContent=p==='you'?(pl.bankLock?('BANK '+pl.bankLock+'t'):''):'';
+});
+$('#turn').textContent=gameOver?'Game over':('Turn '+turn+' of '+totalTurns+' - '+(turnPlayer==='you'?'Your move':'AI pirate move'));
+$('#banner').style.display='none';
+}
+function log(msg){const li=document.createElement('li');li.textContent=msg;$('#shipLog').prepend(li)}
+function logTurn(p,coord,label){log((p==='you'?'You':'AI')+' rolled '+coord+' ('+label+')')}
+function resolveCell(pl,opp,coord){
+const c=pl.grid[coord];
+pl.used.add(coord);
+let msg='';
+if(c.type==='p'){if(c.v>0){pl.cash+=c.v;msg='+'+c.v+' doubloons to cash'}else{pl.cash=Math.max(0,pl.cash+c.v);msg=c.v+' from cash'}}
+else if(c.type==='x2'){pl.cash*=2;msg='DOUBLE! cash x2'}
+else if(c.type==='x3'){pl.cash*=3;msg='TRIPLE! cash x3'}
+else if(c.type==='bomb'){pl.cash=0;msg='BOMB! cash to zero'}
+else if(c.type==='rob'){const amt=Math.floor(opp.cash/2);opp.cash-=amt;pl.cash+=amt;msg='robbed '+amt+' from opponent'}
+else if(c.type==='atk'){const dmg=Math.floor(opp.cash/4);opp.cash=Math.max(0,opp.cash-dmg);msg='attacked! opponent lost '+dmg}
+else if(c.type==='swp'){const t=pl.cash;pl.cash=opp.cash;opp.cash=t;msg='swapped scores with opponent'}
+else if(c.type==='swr'){const t=pl.cash;pl.cash=opp.cash;opp.cash=t;msg='swapped with RANDOM player'}
+return msg;
+}
+function rollFor(p){
+const pl=p==='you'?you:ai,opp=p==='you'?ai:you;
+if(pl.bankLock){pl.bankLock--;if(pl.bankLock===0){pl.cash+=pl.bank;pl.bank=0;pl.bankLock=null;log((p==='you'?'You':'AI')+' banked money returned to cash!')}}
+const coord=rnd(100);
+const c=pl.grid[coord];
+logTurn(p,COLS[coord%10]+(Math.floor(coord/10)+1),cellLabel(c));
+const msg=resolveCell(pl,opp,coord);
+log(msg);
+lastRoll=coord;
+render();
+}
+function bankFor(p){
+const pl=p==='you'?you:ai;
+if(pl.bankLock)return;
+pl.bank=pl.cash;pl.cash=0;pl.bankLock=3;
+log((p==='you'?'You':'AI')+' banked all cash (returns in 3 turns)');
+render();
+}
+function aiTurn(){setTimeout(()=>{if(gameOver)return;rollFor('ai');turnPlayer='you';turn++;render();checkEnd()},600)}
+function nextTurn(){if(gameOver)return;if(turnPlayer==='you'){turnPlayer='ai';render();aiTurn()}else{turnPlayer='you';render()}}
+function checkEnd(){if(turn>totalTurns){gameOver=true;const yt=you.cash+you.bank,at=ai.cash+ai.bank;let w='';if(yt>at)w='YOU WIN!';else if(at>yt)w='AI PIRATE WINS!';else w='DRAW!';$('#banner').textContent=w+' You '+yt+' - AI '+at;$('#banner').style.display='block';$('#roll').disabled=true;$('#bank').disabled=true;log(w)}}
+function newGame(){
+you.cash=0;you.bank=0;you.grid=makeGrid();you.used=new Set();you.bankLock=null;
+ai.cash=0;ai.bank=0;ai.grid=makeGrid();ai.used=new Set();ai.bankLock=null;
+turn=1;turnPlayer='you';lastRoll=null;gameOver=false;
+$('#shipLog').innerHTML='';
+$('#roll').disabled=false;$('#bank').disabled=false;
+log('New game! 30 turns. Most doubloons wins.');
+render();
+}
+$('#roll').onclick=()=>{if(gameOver||turnPlayer!=='you')return;rollFor('you');nextTurn()};
+$('#bank').onclick=()=>{if(gameOver||turnPlayer!=='you')return;bankFor('you');nextTurn()};
+$('#new').onclick=newGame;
+newGame();
+</script>
+
+</body></html>
