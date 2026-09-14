@@ -70,7 +70,7 @@ const $=q=>document.querySelector(q);
 const COLS='ABCDEFGHIJ';
 const SPEC=[{v:1000,n:1},{v:100,n:1},{v:50,n:5},{v:25,n:4},{v:10,n:8},{v:-100,n:1},{v:-25,n:1},{v:-15,n:1},{v:-2,n:2},{v:-1,n:2}];
 const ACTS=[{k:'atk',n:1},{k:'rob',n:1},{k:'swp',n:1},{k:'swr',n:1},{k:'bomb',n:1},{k:'x2',n:1},{k:'x3',n:1}];
-let you={cash:0,bank:0,grid:[],used:new Set(),bankLock:null},ai={cash:0,bank:0,grid:[],used:new Set(),bankLock:null};
+let you={cash:0,bank:0,grid:[],used:new Set(),bankLock:null,bankCd:0},ai={cash:0,bank:0,grid:[],used:new Set(),bankLock:null,bankCd:0};
 let turn=1,totalTurns=30,lastRoll=null,gameOver=false;
 function rnd(n){return Math.floor(Math.random()*n)}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -116,7 +116,10 @@ grid.appendChild(d);
 $('#'+p+'Cash').textContent=fmt(pl.cash);
 $('#'+p+'Bank').textContent=fmt(pl.bank);
 $('#'+p+'Total').textContent=fmt(pl.cash+pl.bank);
-$('#'+p+'Tag').textContent=(pl.bankLock?('BANK '+pl.bankLock+'t'):'');
+let tag='';
+if(pl.bankLock)tag='BANK '+pl.bankLock+'t';
+else if(pl.bankCd>0)tag='cooldown '+pl.bankCd+'t';
+$('#'+p+'Tag').textContent=tag;
 });
 $('#turn').textContent=gameOver?'Game over':('Turn '+turn+' of '+totalTurns+' - roll or bank');
 $('#banner').style.display='none';
@@ -124,7 +127,8 @@ $('#banner').style.display='none';
 function log(msg){const li=document.createElement('li');li.textContent=msg;$('#shipLog').prepend(li)}
 function tickLocks(){
 [you,ai].forEach(pl=>{
-if(pl.bankLock){pl.bankLock--;if(pl.bankLock===0){pl.cash+=pl.bank;pl.bank=0;pl.bankLock=null;log((pl===you?'You':'AI')+' banked money returned to cash!')}}
+if(pl.bankCd>0)pl.bankCd--;
+if(pl.bankLock){pl.bankLock--;if(pl.bankLock===0){pl.cash+=pl.bank;pl.bank=0;pl.bankLock=null;pl.bankCd=2;log((pl===you?'You':'AI')+' banked money returned to cash! 2-turn cooldown before you can bank again')}}
 });
 }
 function resolveCell(pl,opp,coord){
@@ -135,7 +139,7 @@ if(c.type==='p'){if(c.v>0){pl.cash+=c.v;msg='+'+c.v} else {pl.cash=Math.max(0,pl
 else if(c.type==='x2'){pl.cash*=2;msg='DOUBLE x2'}
 else if(c.type==='x3'){pl.cash*=3;msg='TRIPLE x3'}
 else if(c.type==='bomb'){pl.cash=0;msg='BOMB to zero'}
-else if(c.type==='rob'){const amt=Math.floor(opp.cash/2);opp.cash-=amt;pl.cash+=amt;msg='robbed '+amt+' from opponent'}
+else if(c.type==='rob'){const amt=Math.floor(opp.cash/2);opp.cash-=amt;pl.cash+=amt;msg='robbed '+amt+' cash from opponent (bank is safe)'}
 else if(c.type==='atk'){const dmg=Math.floor(opp.cash/4);opp.cash=Math.max(0,opp.cash-dmg);msg='attacked, opponent lost '+dmg}
 else if(c.type==='swp'){const t=pl.cash;pl.cash=opp.cash;opp.cash=t;msg='swapped scores with opponent'}
 else if(c.type==='swr'){const t=pl.cash;pl.cash=opp.cash;opp.cash=t;msg='swapped with RANDOM'}
@@ -145,7 +149,7 @@ return msg;
 function doRoll(){
 if(gameOver)return;
 tickLocks();
-if(ai.cash>=100&&!ai.bankLock&&Math.random()<0.35){ai.bank=ai.cash;ai.cash=0;ai.bankLock=3;log('AI banked its cash (returns in 3 turns)')}
+if(ai.cash>=100&&!ai.bankLock&&ai.bankCd<=0&&Math.random()<0.35){ai.bank=ai.cash;ai.cash=0;ai.bankLock=3;log('AI banked its cash (returns in 3 turns)')}
 const coord=rnd(100);
 lastRoll=coord;
 const label=COLS[coord%10]+(Math.floor(coord/10)+1);
@@ -157,7 +161,7 @@ render();
 checkEnd();
 }
 function doBank(){
-if(gameOver||you.bankLock)return;
+if(gameOver||you.bankLock||you.bankCd>0){if(you.bankCd>0)log('Still on cooldown - '+you.bankCd+' turns to go');return;}
 tickLocks();
 you.bank=you.cash;you.cash=0;you.bankLock=3;
 log('You banked all cash (returns in 3 turns)');
@@ -167,12 +171,12 @@ checkEnd();
 }
 function checkEnd(){if(turn>totalTurns){gameOver=true;const yt=you.cash+you.bank,at=ai.cash+ai.bank;let w='';if(yt>at)w='YOU WIN!';else if(at>yt)w='AI PIRATE WINS!';else w='DRAW!';$('#banner').textContent=w+' You '+yt+' - AI '+at;$('#banner').style.display='block';$('#roll').disabled=true;$('#bank').disabled=true;log(w)}}
 function newGame(){
-you.cash=0;you.bank=0;you.grid=makeGrid();you.used=new Set();you.bankLock=null;
-ai.cash=0;ai.bank=0;ai.grid=makeGrid();ai.used=new Set();ai.bankLock=null;
+you.cash=0;you.bank=0;you.grid=makeGrid();you.used=new Set();you.bankLock=null;you.bankCd=0;
+ai.cash=0;ai.bank=0;ai.grid=makeGrid();ai.used=new Set();ai.bankLock=null;ai.bankCd=0;
 turn=1;lastRoll=null;gameOver=false;
 $('#shipLog').innerHTML='';
 $('#roll').disabled=false;$('#bank').disabled=false;
-log('New game! 30 turns. One roll, both boards play the same square.');
+log('New game! 30 turns. One roll, both boards play the same square. Bank returns after 3 turns, then 2-turn cooldown.');
 render();
 }
 $('#roll').onclick=doRoll;
