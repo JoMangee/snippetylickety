@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CJLBee's Pirate Game v4</title>
+<title>CJLBee's Pirate Game v6</title>
 <style>
 :root{--bg:#0b0f14;--panel:#141a22;--card:#1c242f;--line:#2b3542;--gold:#f5b83d;--green:#3fb950;--red:#f85149;--blue:#58a6ff;--purple:#c9a6ff;--dim:#8b949e}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -43,6 +43,9 @@ button:disabled{opacity:.35;cursor:not-allowed}
 #bank:hover:not(:disabled){background:#2ea043;color:#fff}
 #handoff{background:#2b1a0f;border-color:var(--gold)}
 #handoff:hover:not(:disabled){background:var(--gold);color:#0b0f14}
+.playon{display:flex;align-items:center;gap:8px;justify-content:center;margin:8px 0;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:8px;font-size:13px;font-weight:700;color:var(--dim)}
+.playon input{width:18px;height:18px;accent-color:var(--gold)}
+.playon.on{color:var(--gold);border-color:var(--gold)}
 .log{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
 .log h3{font-size:13px;color:var(--dim);margin-bottom:8px}
 #shipLog{list-style:none;max-height:220px;overflow-y:auto;font-size:12px}
@@ -52,13 +55,14 @@ button:disabled{opacity:.35;cursor:not-allowed}
 </style>
 </head>
 <body>
-<h1>PIRATE GAME v4</h1>
-<p class="sub">Cooper's invention - hotseat multiplayer - one roll, everyone plays the same square - play on past 30 turns</p>
+<h1>PIRATE GAME v6</h1>
+<p class="sub">Cooper's invention - hotseat multiplayer - one roll, everyone plays the same square - play on when YOU decide</p>
 <div class="modes">
 <button class="mode" id="mSolo">SOLO vs BOT</button>
 <button class="mode" id="m2p">2 PLAYERS</button>
 <button class="mode" id="m2b">2 + BOT</button>
 </div>
+<div class="playon" id="poWrap"><input type="checkbox" id="playOnToggle"><label for="playOnToggle">PLAY ON - keep going past 30 turns</label></div>
 <div class="turn" id="turn"></div>
 <div class="layout" id="layout"></div>
 <div class="controls">
@@ -74,7 +78,7 @@ const $=q=>document.querySelector(q);
 const COLS='ABCDEFGHIJ';
 const SPEC=[{v:1000,n:1},{v:100,n:1},{v:50,n:5},{v:25,n:4},{v:10,n:8},{v:-100,n:1},{v:-25,n:1},{v:-15,n:1},{v:-2,n:2},{v:-1,n:2}];
 const ACTS=[{k:'atk',n:1},{k:'rob',n:1},{k:'swp',n:1},{k:'swr',n:1},{k:'bomb',n:1},{k:'x2',n:1},{k:'x3',n:1}];
-let players=[],activeIdx=0,turn=1,totalTurns=30,lastRoll=null,hasActed=false,gameOver=false,playOn=false;
+let players=[],activeIdx=0,turn=1,totalTurns=30,lastRoll=null,hasActed=false,gameOver=false;
 function rnd(n){return Math.floor(Math.random()*n)}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 function makeGrid(){
@@ -134,7 +138,13 @@ b.querySelector('#tag'+i).textContent=tag;
 layout.appendChild(b);
 });
 const pn=players[activeIdx]?players[activeIdx].name:'?';
-$('#turn').textContent=(turn>totalTurns&&!playOn?'PLAY ON - ':'')+'Turn '+turn+(turn>totalTurns?'+':' of '+totalTurns)+' - '+pn+((players[activeIdx]&&players[activeIdx].isBot)?' (bot)':'')+(hasActed?' - press HAND OFF':' - roll or bank');
+const on=!!$('#playOnToggle').checked;
+const over=turn>totalTurns;
+let status='';
+if(over&&!on)status='PLAY ON needed - tick the toggle';
+else if(over&&on)status='PLAY ON';
+$('#turn').textContent=status+(status?' - ':'')+'Turn '+turn+' of '+totalTurns+(on?'+':'')+' - '+pn+((players[activeIdx]&&players[activeIdx].isBot)?' (bot)':'')+(hasActed?' - press HAND OFF':' - roll or bank');
+$('#poWrap').className='playon'+(on?' on':'');
 $('#banner').style.display='none';
 }
 function log(msg){const li=document.createElement('li');li.textContent=msg;$('#shipLog').prepend(li)}
@@ -159,6 +169,8 @@ return msg;
 }
 function doRoll(){
 if(gameOver||hasActed)return;
+const on=!!$('#playOnToggle').checked;
+if(turn>totalTurns&&!on){log('PLAY ON is off - tick the toggle to keep going');return}
 const pl=players[activeIdx];
 tickOwnerLock(pl);
 if(pl.isBot&&pl.cash>=100&&!pl.bankLock&&pl.bankCd<=0&&Math.random()<0.35){pl.bank=pl.cash;pl.cash=0;pl.bankLock=3;log(pl.name+' banked its cash (returns in 3 of its turns)')}
@@ -168,11 +180,13 @@ const label=COLS[coord%10]+(Math.floor(coord/10)+1);
 log('Turn '+turn+': '+pl.name+' rolled '+label+' - everyone plays this square');
 players.forEach(p=>{log(' '+p.name+': '+resolveCell(p,coord))});
 hasActed=true;
-if(turn<=totalTurns)turn++;
+turn++;
 render();
 }
 function doBank(){
 if(gameOver||hasActed)return;
+const on=!!$('#playOnToggle').checked;
+if(turn>totalTurns&&!on){log('PLAY ON is off - tick the toggle to keep going');return}
 const pl=players[activeIdx];
 if(pl.bankLock){log(pl.name+' - money already in bank');return}
 if(pl.bankCd>0){log(pl.name+' - bank on cooldown, '+pl.bankCd+' turns to go');return}
@@ -180,7 +194,7 @@ tickOwnerLock(pl);
 pl.bank=pl.cash;pl.cash=0;pl.bankLock=3;
 log(pl.name+' banked all cash (returns in 3 of their own turns)');
 hasActed=true;
-if(turn<=totalTurns)turn++;
+turn++;
 render();
 }
 function handOff(){
@@ -189,7 +203,6 @@ if(players.length===1)return;
 activeIdx=(activeIdx+1)%players.length;
 hasActed=false;
 lastRoll=null;
-if(turn>totalTurns&&!playOn){playOn=true;log('30 turns done - PLAY ON!');$('#banner').textContent='PLAY ON! 30 turns done - keep going';$('#banner').style.display='block'}
 render();
 if(players[activeIdx].isBot)setTimeout(botTurn,700);
 }
@@ -201,16 +214,19 @@ players.push(p1);
 if(mode===1||mode===2){const p2={name:'P2',cash:0,bank:0,grid:makeGrid(),used:new Set(),bankLock:null,bankCd:0,isBot:false};players.push(p2)}
 if(mode===0){const b={name:'BOT',cash:0,bank:0,grid:makeGrid(),used:new Set(),bankLock:null,bankCd:0,isBot:true};players.push(b)}
 if(mode===2){const b={name:'BOT',cash:0,bank:0,grid:makeGrid(),used:new Set(),bankLock:null,bankCd:0,isBot:true};players.push(b)}
-activeIdx=0;turn=1;lastRoll=null;hasActed=false;gameOver=false;playOn=false;
+activeIdx=0;turn=1;lastRoll=null;hasActed=false;gameOver=false;
+$('#playOnToggle').checked=false;
+$('#poWrap').className='playon';
 $('#shipLog').innerHTML='';
 $('#banner').style.display='none';
 const names=players.map(p=>p.name+(p.isBot?' (bot)':'')).join(' vs ');
-log('New game! '+names+'. Everyone plays the same square each roll. 30 turns, then play on.');
+log('New game! '+names+'. Everyone plays the same square each roll. 30 turns, then PLAY ON is your call.');
 render();
 }
 $('#roll').onclick=doRoll;
 $('#bank').onclick=doBank;
 $('#handoff').onclick=handOff;
+$('#playOnToggle').onchange=function(){render();if(!!this.checked)log('PLAY ON! The game keeps going');else log('Play on turned off');if(players[activeIdx]&&players[activeIdx].isBot)setTimeout(botTurn,700)};
 $('#new').onclick=()=>newGame(players.length===2&&players[1].isBot?0:(players.length===3?2:1));
 $('#mSolo').onclick=()=>newGame(0);
 $('#m2p').onclick=()=>newGame(1);
