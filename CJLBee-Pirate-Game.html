@@ -138,11 +138,9 @@ $('#turn').textContent=(turn>totalTurns&&!playOn?'PLAY ON - ':'')+'Turn '+turn+(
 $('#banner').style.display='none';
 }
 function log(msg){const li=document.createElement('li');li.textContent=msg;$('#shipLog').prepend(li)}
-function tickLocks(){
-players.forEach(pl=>{
+function tickOwnerLock(pl){
 if(pl.bankCd>0)pl.bankCd--;
 if(pl.bankLock){pl.bankLock--;if(pl.bankLock===0){pl.cash+=pl.bank;pl.bank=0;pl.bankLock=null;pl.bankCd=2;log(pl.name+' banked money returned to cash! 2-turn cooldown')}}
-});
 }
 function resolveCell(pl,coord){
 const c=pl.grid[coord];
@@ -162,8 +160,8 @@ return msg;
 function doRoll(){
 if(gameOver||hasActed)return;
 const pl=players[activeIdx];
-tickLocks();
-if(pl.isBot&&pl.cash>=100&&!pl.bankLock&&pl.bankCd<=0&&Math.random()<0.35){pl.bank=pl.cash;pl.cash=0;pl.bankLock=3;log(pl.name+' banked its cash (returns in 3 turns)')}
+tickOwnerLock(pl);
+if(pl.isBot&&pl.cash>=100&&!pl.bankLock&&pl.bankCd<=0&&Math.random()<0.35){pl.bank=pl.cash;pl.cash=0;pl.bankLock=3;log(pl.name+' banked its cash (returns in 3 of its turns)')}
 const coord=rnd(100);
 lastRoll=coord;
 const label=COLS[coord%10]+(Math.floor(coord/10)+1);
@@ -178,9 +176,9 @@ if(gameOver||hasActed)return;
 const pl=players[activeIdx];
 if(pl.bankLock){log(pl.name+' - money already in bank');return}
 if(pl.bankCd>0){log(pl.name+' - bank on cooldown, '+pl.bankCd+' turns to go');return}
-tickLocks();
+tickOwnerLock(pl);
 pl.bank=pl.cash;pl.cash=0;pl.bankLock=3;
-log(pl.name+' banked all cash (returns in 3 turns)');
+log(pl.name+' banked all cash (returns in 3 of their own turns)');
 hasActed=true;
 if(turn<=totalTurns)turn++;
 render();
