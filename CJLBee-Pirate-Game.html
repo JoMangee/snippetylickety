@@ -163,7 +163,7 @@ else if(c.type==='bomb'){pl.cash=0;msg='BOMB to zero'}
 else if(c.type==='rob'){const t=richestOther(pl);if(t){const amt=Math.floor(t.cash/2);t.cash-=amt;pl.cash+=amt;msg='robbed '+amt+' cash from '+t.name+' (bank safe)'}else msg='no one to rob'}
 else if(c.type==='atk'){const t=richestOther(pl);if(t){const dmg=Math.floor(t.cash/4);t.cash=Math.max(0,t.cash-dmg);msg='attacked '+t.name+', they lost '+dmg}else msg='no one to attack'}
 else if(c.type==='swp'){const os=othersOf(pl);if(os.length){const t=os[rnd(os.length)];const tmp=pl.cash;pl.cash=t.cash;t.cash=tmp;msg='swapped cash with '+t.name}else msg='no one to swap'}
-else if(c.type==='swr'){const os=othersOf(pl);if(os.length){const t=os[rnd(os.length)];const tmp=pl.cash;pl.cash=t.cash;t.cash=tmp;msg='swapped with RANDOM ('+t.name+')'}else msg='no one to swap'}
+else if(c.type==='swr'){const pool=[{t:'p',v:1000},{t:'p',v:100},{t:'p',v:50},{t:'p',v:25},{t:'p',v:10},{t:'p',v:-100},{t:'p',v:-25},{t:'p',v:-15},{t:'p',v:-2},{t:'p',v:-1},{t:'x2',v:0},{t:'x3',v:0},{t:'bomb',v:0},{t:'rob',v:0},{t:'atk',v:0}];const pick=pool[rnd(pool.length)];c.type=pick.t;c.v=pick.v;msg='RANDOM: '+resolveCell(pl,coord);c.type='swr'}
 else{msg='nothing here'}
 return msg;
 }
