@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Snippetylickety | Pirate's Code</title>
+  <style>
+    :root{--ink:#081014;--sea:#0d1e25;--panel:#142b31;--panel-2:#19373b;--line:#2b5558;--gold:#f5b83d;--gold-soft:#ffd978;--text:#e8f0ed;--muted:#a5bbb5;--green:#65d391;--red:#ff7567;}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 50% -10%,#244a4b 0,#10272d 38%,var(--ink) 78%);font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    a{color:var(--gold-soft)}
+    .wrap{width:min(1080px,100%);margin:auto;padding:28px 16px 54px}
+    header{position:relative;text-align:center;padding:28px 18px 30px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,rgba(25,55,59,.94),rgba(11,28,34,.96));box-shadow:0 18px 60px rgba(0,0,0,.3);overflow:hidden}
+    header:after{content:"☠  ⚓  ☠";display:block;margin-top:10px;color:var(--gold);letter-spacing:1.2em;font-size:18px;opacity:.8}
+    h1{margin:0;color:var(--gold);font-size:clamp(2rem,7vw,4.4rem);line-height:1.05;letter-spacing:.04em;text-shadow:0 3px 0 #4e3311}
+    .tagline{max-width:650px;margin:14px auto 0;color:var(--muted);font-size:1.05rem}
+    .flag{display:inline-block;margin-bottom:16px;padding:5px 11px;border:1px solid #8e6c27;border-radius:999px;color:var(--gold-soft);background:#302711;text-transform:uppercase;font-size:.72rem;font-weight:800;letter-spacing:.16em}
+    main{display:grid;gap:22px;margin-top:24px}
+    section{border:1px solid var(--line);border-radius:14px;padding:18px;background:rgba(15,34,40,.9)}
+    .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);margin-bottom:14px;padding-bottom:10px}
+    h2{margin:0;color:var(--gold);font-size:1.2rem;letter-spacing:.04em}
+    .count{color:var(--muted);font-size:.8rem}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
+    .card{display:flex;flex-direction:column;min-height:132px;padding:15px;border:1px solid #2a4b4d;border-radius:10px;background:linear-gradient(160deg,var(--panel-2),var(--panel));transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+    .card:hover,.card:focus-within{transform:translateY(-2px);border-color:var(--gold);box-shadow:0 8px 24px rgba(0,0,0,.22)}
+    .card h3{margin:0 0 6px;font-size:1rem}
+    .card h3 a{text-decoration:none}
+    .card h3 a:hover{text-decoration:underline}
+    .card p{margin:0;color:var(--muted);font-size:.91rem}
+    .path{margin-top:auto;padding-top:12px;color:#78aaa2;font:600 .76rem/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+    .featured{border-color:#806329;background:linear-gradient(145deg,#263d34,#172b2d)}
+    .featured h3 a{color:var(--gold-soft)}
+    .note{margin:22px 2px 0;color:var(--muted);font-size:.86rem;text-align:center}
+    footer{margin-top:28px;color:#71928c;text-align:center;font-size:.8rem}
+    @media (max-width:520px){.wrap{padding:14px 10px 36px}header{padding:24px 14px}.section-head{align-items:flex-start;flex-direction:column;gap:2px}section{padding:14px}.card{min-height:0}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <span class="flag">The ship's locker · main</span>
+      <h1>SNIPPETYLICKETY</h1>
+      <p class="tagline">A small deck of browser experiments, secure PHP utilities, and PocketSmith bridge code. Pick a logbook below and set sail.</p>
+    </header>
+
+    <main>
+      <section>
+        <div class="section-head"><h2>⚔️ Playable browser snippets</h2><span class="count">standalone HTML</span></div>
+        <div class="cards">
+          <article class="card featured"><h3><a href="CJLBee-Pirate-Game.html">PIRATE GAME v8</a></h3><p>Cooper's invention: a dark, turn-based pirate board game with shared rolls and a generated 10×10 grid. Open it and choose a mode, then ROLL, BANK, or HAND OFF.</p><div class="path">./CJLBee-Pirate-Game.html</div></article>
+          <article class="card"><h3><a href="ICAM-test.html">Industrial Tablet Camera Tool · Pad-Ex 01</a></h3><p>Touch-friendly camera tester for tablets and kiosks. Allow camera access, activate the preview, capture snapshots, then save or delete them locally.</p><div class="path">./ICAM-test.html</div></article>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head"><h2>🔐 Secure transfer snippets</h2><span class="count">PHP + browser crypto</span></div>
+        <div class="cards">
+          <article class="card"><h3><a href="index.php">Secure Phone-to-Desktop Password Transfer</a></h3><p>Deploy as the web entry point for AES-256-GCM encrypted phone-to-desktop secret transfer; configure the domain and writable temporary storage first.</p><div class="path">./index.php</div></article>
+          <article class="card"><h3><a href="pdrop/index.php">Secure One-File Pairing Drop</a></h3><p>Use as a configured HTTPS endpoint: desktop shows a QR link, phone encrypts and sends a secret, and the desktop reveals it briefly before cleanup.</p><div class="path">./pdrop/index.php</div></article>
+          <article class="card"><h3><a href="includes/config.php.example">Secure Transfer Configuration Template</a></h3><p>Copy to the deployed transfer app as its configuration guide, then set BASE_URL and a writable STORAGE_DIR; never publish real secrets here.</p><div class="path">./includes/config.php.example</div></article>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head"><h2>🌊 PocketSmith MCP bridge</h2><span class="count">OAuth · JSON-RPC · PHP</span></div>
+        <div class="cards">
+          <article class="card"><h3><a href="pocketsmith/index.php">PocketSmith MCP Bridge Endpoint</a></h3><p>Deploy behind HTTPS as the public endpoint; handles OAuth, short-lived bot tokens, session status, tool discovery, and PocketSmith tool requests.</p><div class="path">./pocketsmith/index.php</div></article>
+          <article class="card"><h3><a href="pocketsmith/includes/pocketsmith.php">PocketSmith Bridge Helpers</a></h3><p>Include from the endpoint to load .env settings, generate PKCE, exchange tokens, persist sessions, call MCP tools, unwrap responses, and filter account lists.</p><div class="path">./pocketsmith/includes/pocketsmith.php</div></article>
+          <article class="card"><h3><a href="pocketsmith/.env.example">PocketSmith Environment Template</a></h3><p>Copy to <code>pocketsmith/.env</code> and fill in the developer key, redirect URI, bot secret, and optional token window before deployment.</p><div class="path">./pocketsmith/.env.example</div></article>
+          <article class="card"><h3><a href="pocketsmith/composer.json">PocketSmith Composer Manifest</a></h3><p>Install the PocketSmith PHP SDK dependency and map the <code>PocketSmith\\</code> namespace to <code>src/</code> for Composer autoloading.</p><div class="path">./pocketsmith/composer.json</div></article>
+          <article class="card"><h3><a href="pocketsmith/syntax_check.sh">PocketSmith Syntax Audit</a></h3><p>Run from the bridge directory before commits to lint the two PHP files and check common naming, brace, request, and header mistakes.</p><div class="path">./pocketsmith/syntax_check.sh</div></article>
+          <article class="card"><h3><a href="pocketsmith/test_pocketsmith.php">PocketSmith Lightweight Test Suite</a></h3><p>Run with PHP to test config loading, PKCE/OAuth URL generation, session round trips, request shaping, response extraction, and local account filters.</p><div class="path">./pocketsmith/test_pocketsmith.php</div></article>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head"><h2>📜 Ship's papers</h2><span class="count">docs &amp; deployment notes</span></div>
+        <div class="cards">
+          <article class="card"><h3><a href="README.md">Repository README</a></h3><p>Project overview and setup/usage notes for the transfer tools, camera page, and PocketSmith bridge.</p><div class="path">./README.md</div></article>
+          <article class="card"><h3><a href="TROUBLESHOOTING.md">Root Troubleshooting Guide</a></h3><p>Common PHP, bridge endpoint, naming, and deployment fixes, including quick syntax checks.</p><div class="path">./TROUBLESHOOTING.md</div></article>
+          <article class="card"><h3><a href="pocketsmith/TROUBLESHOOTING.md">PocketSmith Troubleshooting Guide</a></h3><p>Bridge-specific endpoint examples, authentication flow, filtering rules, and diagnostics for MCP responses.</p><div class="path">./pocketsmith/TROUBLESHOOTING.md</div></article>
+          <article class="card"><h3><a href="LICENSE">AGPL-3.0 License</a></h3><p>License terms for using, modifying, and sharing the repository.</p><div class="path">./LICENSE</div></article>
+        </div>
+      </section>
+    </main>
+    <p class="note">Everything linked here is relative, self-contained, and dependency-light. External services and server-side snippets need their own HTTPS/PHP configuration.</p>
+    <footer>Built for GitHub Pages · no external assets or CDNs</footer>
+  </div>
+</body>
+</html>
