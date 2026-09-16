@@ -1,0 +1,8 @@
+{
+  "title": "PocketSmith MCP Bridge Endpoint",
+  "description": "Deploy behind HTTPS as the public endpoint; handles OAuth, short-lived bot tokens, session status, tool discovery, and PocketSmith tool requests.",
+  "section": "PocketSmith MCP bridge",
+  "version": "latest",
+  "featured": false,
+  "entry": "pocketsmith/index.php"
+}

@@ -1,0 +1,33 @@
+name: Regenerate landing page
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - index.html
+
+permissions:
+  contents: write
+
+jobs:
+  reindex:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+
+      - name: Regenerate index.html
+        run: php index_build.php
+
+      - name: Commit regenerated landing page
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- index.html; then
+            echo "index.html is already up to date"
+            exit 0
+          fi
+          git add index.html
+          git commit -m "Regenerate index.html"
+          git push origin HEAD:main

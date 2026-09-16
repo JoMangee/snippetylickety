@@ -1,14 +1,15 @@
-# snippetylicky
+# snippetyl​ickety
 
 Small scripts and things Jo has co-created and wants to share.
 
-# Repository Content
+## Repository Content
 
-## `prop/` - Secure Phone-to-Desktop Password Transfer
+### `pdrop/` - Secure Phone-to-Desktop Password Transfer
 
 A tiny, single-file PHP tool for securely transferring long passwords or secrets from your phone to your browser without typing them manually.
 
 Features:
+
 - End-to-end encryption using AES-256-GCM derived from a shared token
 - Desktop shows a QRCode so the phone can open the send page directly
 - Auto-copy to clipboard on reveal
@@ -16,10 +17,8 @@ Features:
 - No accounts, no persistent storage, no external dependencies beyond browser crypto
 - Universal QR code flow that works with any phone camera
 - Phone-first flow supported
-- Keyboard shorts: `@E@` to reveal and auto-copy, `@D@` to force cleanup
+- Keyboard shortcuts: `@@` to reveal and auto-copy, `@@D@@` to force cleanup
 - Automatic file cleanup after about 60 seconds or on success
-
-![Secure Phone-to-Desktop Password Transfer screenshot](https://github.com/user-attachments/assets/ee765b26-cac0-400a-a9ac-7e9674830934)
 
 Requirements:
 
@@ -29,16 +28,16 @@ Requirements:
 
 Installation:
 
-1. In this repository, the file lives at `prop/index.php` for organization.
-1. For deployment, you can place that file directly at the document root of your `prop` subdomain as `index.php`. You do not need a `prop/` directory on the server if the subdomain itself points at the app root.
-1. Edit the config block at the top of the deployed file:
+1. In this repository, the file lives at `pdrop/index.php` for organization.
+2. For deployment, you can place that file directly at the document root of your `pdrop` subdomain as `index.php`. You do not need a `pdrop/` directory on the server if the subdomain itself points at the app root.
+3. Edit the config block at the top of the deployed file:
 
 ```php
 define('BASE_URL', 'https://prop.yourdomain.com');
 define('STORAGE_DIR', '/yourdomain/folder/');
 ```
 
-1. Make sure `STORAGE_DIR` is writable by the web server.
+4. Make sure `STORAGE_DIR` is writable by the web server.
 
 ```bash
 chmod 775 /path/to/storage/dir
@@ -49,26 +48,25 @@ That is it. No database, Composer setup, or extra services required.
 
 Usage:
 
-1. On desktop, open `https://prop.yourdomain.com?init=abcde f12`.
-1. On phone, scan the QR Code and open the generated link.
-1. Paste the secret on the phone and press `Encrypt & Send`.
-1. Back on desktop, press `@E@` to reveal and auto-copy, or `@D@` to force cleanup.
+1. On desktop, open `https://prop.yourdomain.com/?init=abcde f12`.
+2. On phone, scan the QR Code and open the generated link.
+3. Paste the secret on the phone and press `Encrypt & Send`.
+4. Back on desktop, press `@@` to reveal and auto-copy, or `@@D@@` to force cleanup.
 
 Manual phone entry:
 
-- Open `https://prop.yourdomain.com?pon=abcde f12` on the phone and send as above.
+- Open `https://prop.yourdomain.com/?pon=abcde f12` on the phone and send as above.
 
 Security notes:
 
 - Encryption uses AES-256-GCM with a PBKDF2-derived key from the shared token.
 - The server only sees base64-encoded ciphertext, never plaintext.
-- Files are ephemeral and are deleted after success, the `@D@` key, or timeout.
+- Files are ephemeral and are deleted after success, the `@@D@@` key, or timeout.
 - Use a random 8 to 12 character token each time. Short or weak tokens can be brute-forced.
 
+### `ICAM-test.html` - Industrial Camera Test Page
 
-## `ICAM-test.html` - Industrial Camera Test Page
-
-`ICAM-test.html` is a standalone browser-based camera tool intended for table or kiosks-style testing.
+`ICAM-test.html` is a standalone browser-based camera tool intended for tablet or kiosk-style testing.
 
 It provides:
 
@@ -84,11 +82,11 @@ Usage:
 - Allow camera access when prompted.
 - Use the on-screen controls to start the camera, take snapshots, and save images locally.
 
-# Pocketsmith MCP Bridge
+## PocketSmith MCP Bridge
 
-A PHP-based bridge to facilitate integration with the Pocketsmith MCP server, handling OAuth 2.0 with PKCE and token caching.
+A PHP-based bridge to facilitate integration with the PocketSmith MCP server, handling OAuth 2.0 with PKCE and token caching.
 
-- **Location:** `/pocketsmith`
+- **Location:** `pocketsmith`
 - **Features:**
   - Automated OAuth 2.0 handshake with PKCE support.
   - Callback listener for secure token exchange.
@@ -96,25 +94,44 @@ A PHP-based bridge to facilitate integration with the Pocketsmith MCP server, ha
   - Proxy endpoint for MCP-compatible requests.
 - **Setup:** Deploy the `pocketsmith` folder, configure credentials via `.env` file (preferred method) as the primary configuration approach. Navigate to the directory to initiate authentication.
 
-You can find credentials in Pocketsmith under **Security & Integrations > Manage developer keys**.
+You can find credentials in PocketSmith under **Security & Integrations > Manage developer keys**.
 
-! Note: **Security Warning:** These are powerful keys and should never be shared or passed into a website (only into the server-side config).
+> **Security Warning:** These are powerful keys and should never be shared or passed into a website (only into the server-side config).
 
 ### Environment Configuration (Preferred Method)
 
-The Pocketsmith integration now supports configuration via a `.env` file placed in the `pocketsmith/` directory.
+The PocketSmith integration supports configuration via a `.env` file placed in the `pocketsmith/` directory.
 
-1. Copy `pocketsmith/.env.example` to `pocketsmith/.env`
+1. Copy `pocketsmith/.env.example` to `pocketsmith/.env`.
 2. Edit `pocketsmith/.env` and add your credentials:
-   ```
-   POCKETSMITH_DEVELOPER_KEY=your_actual_developer_key_here
-   POCKETSMITH_REDIRECT_URI=https://your-domain.com/pocketsmith/index.php
-   ```
+
+```text
+POCKETSMITH_DEVELOPER_KEY=your_actual_developer_key_here
+POCKETSMITH_REDIRECT_URI=https://your-domain.com/pocketsmith/index.php
+```
+
 3. The `.htaccess` file will prevent external access to `.env` for security.
 
 This `.env` configuration takes precedence over the global `config.php` settings, providing a dedicated configuration method per project folder.
 
-License
+## Landing page and metadata
+
+`index.html` is the static, GitHub Pages-compatible landing page. It is generated by running:
+
+```bash
+php index_build.php
+```
+
+The generator scans JSON metadata rather than hard-coding the project cards. The metadata convention is:
+
+- Folder projects use `<folder>/index.meta.json`; the metadata's `entry` value points to the folder entry point, such as `pdrop/index.php`.
+- Root-level single-file projects use `.meta/<filename>.meta.json`; the metadata's `entry` value points to the root file, such as `CJLBee-Pirate-Game.html`.
+
+Each metadata file contains `title`, `description`, `section`, and `entry`. `version` and `featured` are optional; the featured project receives the gold card treatment. The generator deliberately excludes the root `index.php` runtime endpoint, which has been removed because the landing page is static.
+
+A GitHub Actions workflow at `.github/workflows/reindex.yml` regenerates `index.html` on pushes to `main` (while ignoring pushes that only change `index.html`) and commits the result when it changes.
+
+## License
 
 AGPL+ - feel free to use, modify, and share.
 

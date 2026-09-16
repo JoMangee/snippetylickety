@@ -1,0 +1,7 @@
+{
+  "title": "Secure One-File Pairing Drop",
+  "description": "Use as a configured HTTPS endpoint: desktop shows a QR link, phone encrypts and sends a secret, and the desktop reveals it briefly before cleanup.",
+  "section": "Secure transfer snippets",
+  "featured": false,
+  "entry": "pdrop/index.php"
+}
