@@ -66,6 +66,7 @@ usort($projects, static function (array $a, array $b) use ($sectionOrder): int {
     $sectionB = array_search($b['section'], $sectionOrder, true);
     $sectionA = $sectionA === false ? PHP_INT_MAX : $sectionA;
     $sectionB = $sectionB === false ? PHP_INT_MAX : $sectionB;
+
     return [$sectionA, $a['featured'] ? 0 : 1, strcasecmp((string) $a['title'], (string) $b['title'])]
         <=> [$sectionB, $b['featured'] ? 0 : 1, strcasecmp((string) $b['title'], (string) $a['title'])];
 });
@@ -76,15 +77,15 @@ foreach ($projects as $project) {
 }
 
 $sectionDecor = [
-    'Playable browser snippets' => ['icon' => '🕹️', 'count' => 'standalone HTML'],
+    'Playable browser snippets' => ['icon' => '🧭', 'count' => 'standalone HTML'],
     'Secure transfer snippets' => ['icon' => '🔐', 'count' => 'PHP + browser crypto'],
-    'PocketSmith MCP bridge' => ['icon' => '🧾', 'count' => 'OAuth • JSON-RPC • PHP'],
+    'PocketSmith MCP bridge' => ['icon' => '🧾', 'count' => 'OAuth → JSON-RPC → PHP'],
 ];
 
 $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 $sectionHtml = '';
 foreach ($sections as $sectionName => $sectionProjects) {
-    $decor = $sectionDecor[$sectionName] ?? ['icon' => '🗂️', 'count' => 'metadata-driven snippets'];
+    $decor = $sectionDecor[$sectionName] ?? ['icon' => '🧪', 'count' => 'metadata-driven snippets'];
     $sectionHtml .= "      <section>\n";
     $sectionHtml .= '        <div class="section-head"><h2>' . $escape($decor['icon'] . ' ' . $sectionName) . '</h2><span class="count">' . $escape($decor['count']) . "</span></div>\n";
     $sectionHtml .= "        <div class=\"cards\">\n";
@@ -92,10 +93,10 @@ foreach ($sections as $sectionName => $sectionProjects) {
     foreach ($sectionProjects as $project) {
         $classes = 'card' . ($project['featured'] ? ' featured' : '');
         $displayTitle = trim((string) $project['title'] . ($project['version'] !== '' ? ' ' . $project['version'] : ''));
-        $sectionHtml .= '          <article class="' . $classes . '">';
-        $sectionHtml .= '<h3><a href="' . $escape($project['entry']) . '">' . $escape($displayTitle) . '</a></h3>';
+        $sectionHtml .= '          <a class="' . $classes . '" href="' . $escape((string) $project['entry']) . '">';
+        $sectionHtml .= '<h3>' . $escape($displayTitle) . '</h3>';
         $sectionHtml .= '<p>' . $escape((string) $project['description']) . '</p>';
-        $sectionHtml .= '<div class="path">./' . $escape($project['entry']) . "</div></article>\n";
+        $sectionHtml .= '<div class="path">./' . $escape((string) $project['entry']) . "</div></a>\n";
     }
 
     $sectionHtml .= "        </div>\n      </section>\n\n";
@@ -115,7 +116,7 @@ $html = <<<'HTML'
     a{color:var(--gold-soft)}
     .wrap{width:min(1080px,100%);margin:auto;padding:28px 16px 54px}
     header{position:relative;text-align:center;padding:28px 18px 30px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,rgba(25,55,59,.94),rgba(11,28,34,.96));box-shadow:0 18px 60px rgba(0,0,0,.3);overflow:hidden}
-    header:after{content:"⚓  ⚔  ⚓";display:block;margin-top:10px;color:var(--gold);letter-spacing:1.2em;font-size:18px;opacity:.8}
+    header:after{content:"⚓  ⚓  ⚓";display:block;margin-top:10px;color:var(--gold);letter-spacing:1.2em;font-size:18px;opacity:.8}
     h1{margin:0;color:var(--gold);font-size:clamp(2rem,7vw,4.4rem);line-height:1.05;letter-spacing:.04em;text-shadow:0 3px 0 #4e3311}
     .tagline{max-width:650px;margin:14px auto 0;color:var(--muted);font-size:1.05rem}
     .flag{display:inline-block;margin-bottom:16px;padding:5px 11px;border:1px solid #8e6c27;border-radius:999px;color:var(--gold-soft);background:#302711;text-transform:uppercase;font-size:.72rem;font-weight:800;letter-spacing:.16em}
@@ -125,7 +126,7 @@ $html = <<<'HTML'
     h2{margin:0;color:var(--gold);font-size:1.2rem;letter-spacing:.04em}
     .count{color:var(--muted);font-size:.8rem}
     .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
-    .card{display:flex;flex-direction:column;min-height:132px;padding:15px;border:1px solid #2a4b4d;border-radius:10px;background:linear-gradient(160deg,var(--panel-2),var(--panel));transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+    .card{display:flex;flex-direction:column;min-height:132px;padding:15px;border:1px solid #2a4b4d;border-radius:10px;background:linear-gradient(160deg,var(--panel-2),var(--panel));transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;text-decoration:none;color:inherit}
     .card:hover,.card:focus-within{transform:translateY(-2px);border-color:var(--gold);box-shadow:0 8px 24px rgba(0,0,0,.22)}
     .card h3{margin:0 0 6px;font-size:1rem}
     .card h3 a{text-decoration:none}
