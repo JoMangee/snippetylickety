@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Snippetlylickety | Pirate's Code</title>
   <style>
-    :root{--ink:#081014;--sea:#0d1e25;--panel:#142b31;--panel-2:#19373b;--line:#2b5558;--gold:#f5b83d;--gold-soft:#ffd978;--text:#e8f0ed;--muted:#a5bbb7;--green:#65d391;--red:#ff7567}
-    *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 50% -10%,#244a4b 0,#10272d 38%,var(--ink) 78%);font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    :root{--ink:#081014;--sea:#0d1e25;--panel:#142b31;--panel-2:#19373b;--gline:#2b5558;--gold:#f5b83d;-t-gold-soft:#ffd978;--t-xt:#e8f0ed;--muted:#a5bbb7;--green:#65d391;--red:#ff7563}
+    *{box-sizing:border;}
+    body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 50% -10%,#244a4b 0,#10272d 38%,var(--ink) 78%);font:16px/1.55 system-ui,-apple-system,"BlinkMacSystemFont,"Segoe UI",sans-serif}
     a{color:var(--gold-soft)}
     .wrap{width:min(1080px,100%);margin:auto;padding:28px 16px 54px}
     header{position:relative;text-align:center;padding:28px 18px 30px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,rgba(25,55,59,.94),rgba(11,28,34,.96));box-shadow:0 18px 60px rgba(0,0,0,.3);overflow:hidden}
-    header:after{content:"⚓  ⚓  ⚓";display:block;margin-top:10px;color:var(--gold);letter-spacing:1.2em;font-size:18px;opacity:.8}
+    header:after{content:"⚓  ✓ ⚓";display:block;margin-top:10px;color:var(--gold);letter-spacing:1.2em;font-size:18px;opacity:.8}
     h1{margin:0;color:var(--gold);font-size:clamp(2rem,7vw,4.4rem);line-height:1.05;letter-spacing:.04em;text-shadow:0 3px 0 #4e3311}
     .tagline{max-width:650px;margin:14px auto 0;color:var(--muted);font-size:1.05rem}
     .flag{display:inline-block;margin-bottom:16px;padding:5px 11px;border:1px solid #8e6c27;border-radius:999px;color:var(--gold-soft);background:#302711;text-transform:uppercase;font-size:.72rem;font-weight:800;letter-spacing:.16em}
@@ -27,12 +27,12 @@
     .card h3 a{text-decoration:none}
     .card h3 a:hover{text-decoration:underline}
     .card p{margin:0;color:var(--muted);font-size:.91rem}
-    .path{margin-top:auto;padding-top:12px;color:#78aaa7;font:600 .76rem/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
-    .featured{border-color:#806329;background:linear-gradient(145deg,#263d34,#172b2d)}
+    .path{margin-top:auto;padding:12px;color:#78aaa7;font:600 .76rem/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+    .featured{border-color:#806329;background:linear-gradient(145deg,#263d34,#172b2d}
     .featured h3 a{color:var(--gold-soft)}
     .note{margin:22px 2px 0;color:var(--muted);font-size:.86rem;text-align:center}
     footer{margin-top:28px;color:#71928c;text-align:center;font-size:.8rem}
-    @media (max-width:520px){.wrap{padding:14px 10px 36px}header{padding:24px 14px}.section-head{align-items:flex-start;flex-direction:column;gap:2px}section{padding:14px}.card{min-height:0}}
+    @media (max-width:520px){.wrap{padding:14px 10px 36px}header{padding:24px 14px}section-head{align-items:flex-start;flex-direction:column;gap:2px}section{padding:14px}.card{min-height:0}}
   </style>
 </head>
 <body>
@@ -47,7 +47,7 @@
       <section>
         <div class="section-head"><h2>🧭 Playable browser snippets</h2><span class="count">standalone HTML</span></div>
         <div class="cards">
-          <a class="card featured" href="CJLBee-Pirate-Game.html"><h3>PIRATE GAME 8.2</h3><p>Cooper&#039;s invention: a dark, turn-based pirate board game with shared rolls and a generated 10×10 grid. Open it and choose a mode, then ROLL, BANK, or HAND OFF.</p><div class="path">./CJLBee-Pirate-Game.html</div></a>
+          <a class="card featured" href="CJLBee-Pirate-Game.html"><h3>PIRATE GAME 8.3</h3><p>Cooper&#039;s invention: a dark, turn-based pirate board game with shared rolls and a generated 10×10 grid. Open it and choose a mode, then ROLL, BANK, or HAND OFF.</p><div class="path">./CJLBee-Pirate-Game.html</div></a>
           <a class="card" href="ICAM-test.html"><h3>Industrial Tablet Camera Tool ⚡ Pad-Ex 01</h3><p>Touch-friendly camera tester for tablets and kiosks. Allow camera access, activate the preview, capture snapshots, then save or delete them locally.</p><div class="path">./ICAM-test.html</div></a>
         </div>
       </section>

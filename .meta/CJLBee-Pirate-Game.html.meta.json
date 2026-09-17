@@ -1,8 +1,8 @@
 {
   "title": "PIRATE GAME",
-  "description": "Cooper's invention: a dark, turn-based pirate board game with shared rolls and a generated 10×10 grid. Open it and choose a mode, then ROLL, BANK, or HAND OFF.",
+  "description": "Cooper's invention: a dark, turn-based pirate board game with shared rolls and a generated 10×10 grid. Open it and choose a mode, then ROLL, BANK or HAND OFF.",
   "section": "Playable browser snippets",
-  "version": "8.2",
+  "version": "8.3",
   "featured": true,
   "entry": "CJLBee-Pirate-Game.html"
 }
