@@ -1,6 +1,6 @@
 # Snippetylickety
 
-Small standalone browser experiments and PHP utilities. The public landing page links to each experiment, including the modular Cooper Foodgame at `foodgame/`.
+Small standalone browser experiments and PHP utilities. The public landing page links to each experiment, including the modular Foodgame at `foodgame/`.
 
 ## Foodgame
 
@@ -9,7 +9,7 @@ Open `foodgame/index.html` (or deploy the `foodgame/` directory under a PHP HTTP
 ### Final modular file list
 
 - `foodgame/index.html` — small single-page shell and accessible form/panels; loads `style.css` and the three ES modules.
-- `foodgame/style.css` — mobile-first, bright, bold, rounded Cooper-friendly UI; portrait and landscape layouts, large touch targets, and no hover-only behavior.
+- `foodgame/style.css` — mobile-first, bright, bold, rounded CJLBee-friendly UI; portrait and landscape layouts, large touch targets, and no hover-only behavior.
 - `foodgame/js/game.js` — focused game rules and browser orchestration: XP, level curve, spice tolerance outcomes, Noodle Masterpiece buffs, key storage, and event flow.
 - `foodgame/js/api.js` — focused GET client. It adds the API key to every request and requires JSON responses.
 - `foodgame/js/ui.js` — focused DOM rendering for stats, history, feed, buff display, status, and activity log.
@@ -44,29 +44,29 @@ The API creates `foodgame-data.json`, `foodgame-data.lock`, `rate.lock`, and has
 
 Base URL: `https://YOUR-DOMAIN.example/foodgame/api.php`. All calls are GET and all responses are JSON. Parameters are URL-encoded. Every call includes `key`.
 
-Actions are `stats`, `entries`, `feed`, `activity`, and `log`. `player` defaults to `Cooper` for `stats`, `entries`, and `log`. `feed` accepts an optional player: omitted means all players. `activity` accepts an optional player and an optional `since`.
+Actions are `stats`, `entries`, `feed`, `activity`, and `log`. `player` defaults to `CJLbee` for `stats`, `entries`, and `log`. `feed` accepts an optional player: omitted means all players. `activity` accepts an optional player and an optional `since`.
 
 Examples:
 
 ```sh
 KEY='your-private-token'
 BASE='https://YOUR-DOMAIN.example/foodgame/api.php'
-curl -sG "$BASE" --data-urlencode "key=$KEY" --data-urlencode 'action=stats' --data-urlencode 'player=Cooper'
-curl -sG "$BASE" --data-urlencode "key=$KEY" --data-urlencode 'action=log' --data-urlencode 'player=Cooper' --data-urlencode 'meal=noodle-masterpiece' --data-urlencode 'rating=8' --data-urlencode 'new=1'
+curl -sG "$BASE" --data-urlencode "key=$KEY" --data-urlencode 'action=stats' --data-urlencode 'player=CJLbee'
+curl -sG "$BASE" --data-urlencode "key=$KEY" --data-urlencode 'action=log' --data-urlencode 'player=CJLBee' --data-urlencode 'meal=noodle-masterpiece' --data-urlencode 'rating=8' --data-urlencode 'new=1'
 curl -sG "$BASE" --data-urlencode "key=$KEY" --data-urlencode 'action=feed'
-curl -sG "$BASE" --data-urlencode "key=$KEY" --data-urlencode 'action=activity' --data-urlencode 'player=Cooper' --data-urlencode 'since=42'
+curl -sG "$BASE" --data-urlencode "key=$KEY" --data-urlencode 'action=activity' --data-urlencode 'player=CJLBee' --data-urlencode 'since=42'
 ```
 
 A successful log response includes `ok`, `player`, `meal`, `rating`, `new`, `xp_gained`, `entry`, `stats`, and recent `entries`. `stats` contains `level`, `total_xp`, `xp_progress`, `xp_needed`, `xp_to_next`, `streak`, `spice_tolerance`, and `meals_logged`.
 
-`entries` returns `{ "ok": true, "player": "Cooper", "entries": [...] }` with that player's newest 25 entries. `feed` always returns a required `feed` key: `{ "ok": true, "feed": [...] }`. With no player it includes all players, newest first; ties are ordered by descending numeric `id` for stable ordering.
+`entries` returns `{ "ok": true, "player": "CJLBee", "entries": [...] }` with that player's newest 25 entries. `feed` always returns a required `feed` key: `{ "ok": true, "feed": [...] }`. With no player it includes all players, newest first; ties are ordered by descending numeric `id` for stable ordering.
 
 Each feed/history/activity entry has these required fields:
 
 ```json
 {
   "id": 42,
-  "player": "Cooper",
+  "player": "CJLBee",
   "meal": "noodle-masterpiece",
   "rating": 8,
   "new": true,
