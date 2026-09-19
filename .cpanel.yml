@@ -1,6 +1,6 @@
 deployment:
   tasks:
-    - source .deploy.env
+    - source ~/.deploy.env
     - export DEPLOYPATH=$DEPLOYPATH_POCKETSMITH
     - mkdir -p $DEPLOYPATH
     - echo "Deploying pocketsmith to $DEPLOYPATH"
