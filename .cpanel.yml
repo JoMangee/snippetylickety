@@ -1,7 +1,13 @@
 deployment:
   tasks:
-    - export DEPLOYPATH=/home2/meshnet/pocketsmith/
+    - source .deploy.env
+    - export DEPLOYPATH=$DEPLOYPATH_POCKETSMITH
     - /bin/cp -rf pocketsmith/* $DEPLOYPATH
+    - find $DEPLOYPATH -type d -exec chmod 755 {} +
+    - find $DEPLOYPATH -type f -exec chmod 644 {} +
+    - if [ -d "$DEPLOYPATH/data" ]; then chmod 755 "$DEPLOYPATH/data"; fi
+    - export DEPLOYPATH=$DEPLOYPATH_FOODGAME
+    - /bin/cp -rf foodgame/* $DEPLOYPATH
     - find $DEPLOYPATH -type d -exec chmod 755 {} +
     - find $DEPLOYPATH -type f -exec chmod 644 {} +
     - if [ -d "$DEPLOYPATH/data" ]; then chmod 755 "$DEPLOYPATH/data"; fi
