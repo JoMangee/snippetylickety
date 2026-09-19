@@ -1,4 +1,16 @@
 <?php
+// .env loader - server config, never commit real values
+if (file_exists(_DIR_ . '/.env')) {
+    foreach (file(_DIR_ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        if (str_starts_with($line, '#') || !str_contains($line, '=')) continue;
+            [$k, $v] = explode('=', $line, 2);
+            putenv(trim($k) . '=' . trim($v));
+        }
+    }
+}
+$TOKEN = getenv('FOODGAME_TOKEN') ?: '';
+$DATA_DIR = getenv('FOODGAME_DATA_DIR') ?: _DIR_ . '/data';
+$RATE_LIMIT = (int)(getenv('FOODGAME_RATE_LIMIT') ?: 60);
 declare(strict_types=1);
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
