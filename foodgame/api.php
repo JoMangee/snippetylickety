@@ -1,43 +1,79 @@
 <?php
 declare(strict_types=1);
-ini_set('display_errors','0'); error_reporting(E_ALL);
-header('Content-Type: application/json; charset=utf-8'); header('X-Content-Type-Options: nosniff');
-function out(array $body,int $status=200,array $headers=[]): void { http_response_code($status); foreach($headers as $k=>$v){header($k.': '.$v);} $json=json_encode($body,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE); echo $json===false ? '{"ok":false,"error":"server_error"}' : $json; exit; }
-function atomic_save(string $file,string $text): bool { $tmp=tempnam(dirname($file),'.foodgame-'); if($tmp===false)return false; if(file_put_contents($tmp,$text,LOCK_EX)===false){@unlink($tmp);return false;} @chmod($tmp,0600); if(!@rename($tmp,$file)){@unlink($tmp);return false;} return true; }
-function blank_player(): array { return ['level'=>1,'total_xp'=>0,'streak'=>0,'spice_tolerance'=>8,'entries'=>[]]; }
-function stats(array $p): array { $level=max(1,(int)($p['level']??1)); $xp=max(0,(int)($p['total_xp']??0)); $floor=($level-1)*($level-1)*10; $ceiling=$level*$level*10; return ['level'=>$level,'total_xp'=>$xp,'xp_progress'=>max(0,$xp-$floor),'xp_needed'=>max(1,$ceiling-$floor),'xp_to_next'=>$ceiling,'streak'=>max(0,(int)($p['streak']??0)),'spice_tolerance'=>max(0,min(8,(int)($p['spice_tolerance']??8))),'meals_logged'=>count($p['entries']??[])]; }
-function recent(array $p): array { return array_values(array_slice(array_reverse(is_array($p['entries']??null)?$p['entries']:[]),0,25)); }
-$placeholder='REPLACE_WITH_A_LONG_RANDOM_TOKEN'; $configFiles=[dirname(__DIR__).DIRECTORY_SEPARATOR.'foodgame-config.php',dirname(__DIR__,2).DIRECTORY_SEPARATOR.'foodgame-config.php'];
-foreach($configFiles as $config){if(is_file($config)){$loaded=require $config;if(is_array($loaded)&&isset($loaded['api_key'])&&!defined('FOODGAME_API_KEY'))define('FOODGAME_API_KEY',(string)$loaded['api_key']);if(defined('FOODGAME_API_KEY'))break;}}
-$secret=defined('FOODGAME_API_KEY')?(string)constant('FOODGAME_API_KEY'):$placeholder; $key=$_GET['key']??'';
-if(!is_string($key)||$secret===''||$secret===$placeholder||!hash_equals($secret,$key))out(['ok'=>false,'error'=>'unauthorized'],401);
-$dir=defined('FOODGAME_STORAGE_DIR')?(string)constant('FOODGAME_STORAGE_DIR'):dirname(__DIR__).DIRECTORY_SEPARATOR.'foodgame-data';
-if($dir===''||(!is_dir($dir)&&!@mkdir($dir,0700,true)))out(['ok'=>false,'error'=>'storage_unavailable'],500); @chmod($dir,0700);
-$now=time(); $ip=is_string($_SERVER['REMOTE_ADDR']??null)?$_SERVER['REMOTE_ADDR']:'unknown'; $rateLock=@fopen($dir.DIRECTORY_SEPARATOR.'rate.lock','c');
-if($rateLock===false||!@flock($rateLock,LOCK_EX)){if(is_resource($rateLock))@fclose($rateLock);out(['ok'=>false,'error'=>'rate_limit_unavailable'],503);}
-$rateFile=$dir.DIRECTORY_SEPARATOR.'rate-'.hash('sha256',$ip).'.json'; $old=json_decode((string)@file_get_contents($rateFile),true); $old=is_array($old)?$old:[]; $old=array_values(array_filter($old,static fn($t)=>(int)$t>$now-60));
-if(count($old)>=60){@flock($rateLock,LOCK_UN);@fclose($rateLock);out(['ok'=>false,'error'=>'rate_limited'],429,['Retry-After'=>'60']);}
-$old[]=$now; $saved=atomic_save($rateFile,json_encode($old)?:'[]'); @flock($rateLock,LOCK_UN); @fclose($rateLock); if(!$saved)out(['ok'=>false,'error'=>'rate_limit_unavailable'],503);
-$dataFile=$dir.DIRECTORY_SEPARATOR.'foodgame-data.json'; $lock=@fopen($dir.DIRECTORY_SEPARATOR.'foodgame-data.lock','c');
-if($lock===false||!@flock($lock,LOCK_EX)){if(is_resource($lock))@fclose($lock);out(['ok'=>false,'error'=>'storage_unavailable'],500);}
-$store=json_decode((string)@file_get_contents($dataFile),true); if(!is_array($store))$store=['version'=>1,'players'=>[]]; if(!is_array($store['players']??null))$store['players']=[];
-$player=$_GET['player']??'Cooper'; $action=$_GET['action']??'stats';
-if(!is_string($player)||!preg_match('/^[A-Za-z0-9 _-]{1,32}$/',$player)){@flock($lock,LOCK_UN);@fclose($lock);out(['ok'=>false,'error'=>'invalid_player'],400);}
-if(!is_string($action)||!in_array($action,['stats','entries','log'],true)){@flock($lock,LOCK_UN);@fclose($lock);out(['ok'=>false,'error'=>'invalid_action'],400);}
-$catalog=['noodle-masterpiece'=>['name'=>'Noodle Masterpiece','spice'=>8],'scrap-mechanic-snack'=>['name'=>'Scrap Mechanic Snack','spice'=>3],'boss'=>['name'=>'Boss Meal','spice'=>6],'fruit-fuel'=>['name'=>'Fruit Fuel','spice'=>1]];
-$meal=$_GET['meal']??null; if($meal!==null&&(!is_string($meal)||!isset($catalog[$meal]))){@flock($lock,LOCK_UN);@fclose($lock);out(['ok'=>false,'error'=>'invalid_meal'],400);}
-$rating=null; if(isset($_GET['rating'])){$r=$_GET['rating'];if(!is_string($r)||!preg_match('/^(10|[0-9])$/',$r)){@flock($lock,LOCK_UN);@fclose($lock);out(['ok'=>false,'error'=>'invalid_rating'],400);}$rating=(int)$r;}
-$new=false; if(isset($_GET['new'])&&is_string($_GET['new']))$new=in_array(strtolower($_GET['new']),['1','true','yes','on'],true);
-$p=is_array($store['players'][$player]??null)?$store['players'][$player]:blank_player(); if(!is_array($p['entries']??null))$p['entries']=[];
-$result=['ok'=>true,'player'=>$player,'meal'=>$meal,'rating'=>$rating,'new'=>$new,'stats'=>stats($p),'entries'=>recent($p)];
-if($action==='log'){
- if($meal===null||$rating===null){@flock($lock,LOCK_UN);@fclose($lock);out(['ok'=>false,'error'=>'log_requires_meal_and_rating'],400);}
- $info=$catalog[$meal]; $xp=10+($new?15:0)+($rating>=7?5:0)+($meal==='boss'?20:0); $tol=max(0,min(8,(int)($p['spice_tolerance']??8))); $spice=(int)$info['spice']; $chance=0;$heat=0;$duration=0;$debuff=false;
- if($tol>=$spice){$resultName='easy';$chance=100;} elseif($tol>=4){$resultName='hot';$chance=(int)round(50+($tol-4)*12.5);} elseif($tol>=1){$resultName='low-tolerance';$chance=30;$heat=random_int(0,5);$duration=60;$debuff=true;} else {$resultName='debuffed';$debuff=true;}
- $buffs=[]; if($meal==='noodle-masterpiece'&&$chance>0&&random_int(1,100)<=$chance)$buffs=['highly energized (2x base energy)','heated engine (+70% speed, +20% acceleration)','energy consumption 2x','duration 15 minutes'];
- $entry=['timestamp'=>gmdate('c'),'meal'=>$meal,'meal_name'=>$info['name'],'spice'=>$spice,'rating'=>$rating,'new'=>$new,'xp_gained'=>$xp,'buffs_applied'=>$buffs,'spice_result'=>$resultName,'buff_chance_percent'=>$chance,'heat_damage_per_4_seconds'=>$heat,'heat_duration_seconds'=>$duration,'debuff'=>$debuff];
- $p['total_xp']=max(0,(int)($p['total_xp']??0))+$xp; $p['level']=max(1,(int)($p['level']??1)); while($p['total_xp']>=$p['level']*$p['level']*10)$p['level']++; $p['streak']=max(0,(int)($p['streak']??0))+1; $p['spice_tolerance']=$tol; $p['entries'][]=$entry; if(count($p['entries'])>100)$p['entries']=array_slice($p['entries'],-100); $store['version']=1;$store['players'][$player]=$p;
- $json=json_encode($store,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE); if($json===false||!atomic_save($dataFile,$json.PHP_EOL)){@flock($lock,LOCK_UN);@fclose($lock);out(['ok'=>false,'error'=>'storage_write_failed'],500);}
- $result['xp_gained']=$xp;$result['entry']=$entry;$result['buffs_applied']=$buffs;$result['stats']=stats($p);$result['entries']=recent($p);
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+header('Content-Type: application/json; charset=utf-8');
+header('X-Content-Type-Options: nosniff');
+
+function respond(array $body, int $status = 200, array $headers = []): never {
+    http_response_code($status);
+    foreach ($headers as $name => $value) header($name . ': ' . $value);
+    $json = json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    echo $json === false ? '{"ok":false,"error":"server_error"}' : $json;
+    exit;
 }
-@flock($lock,LOCK_UN);@fclose($lock); out($result);
+function fail(string $error, int $status = 400, array $headers = []): never { respond(['ok' => false, 'error' => $error], $status, $headers); }
+function atomic_write(string $file, string $contents): bool {
+    $tmp = @tempnam(dirname($file), '.foodgame-');
+    if ($tmp === false) return false;
+    if (@file_put_contents($tmp, $contents, LOCK_EX) === false) { @unlink($tmp); return false; }
+    @chmod($tmp, 0600);
+    if (!@rename($tmp, $file)) { @unlink($tmp); return false; }
+    return true;
+}
+function blank_player(): array { return ['level' => 1, 'total_xp' => 0, 'streak' => 0, 'spice_tolerance' => 8, 'meals_logged' => 0]; }
+function player_stats(array $player): array {
+    $level = max(1, (int)($player['level'] ?? 1)); $xp = max(0, (int)($player['total_xp'] ?? 0));
+    while ($xp >= $level * $level * 10) $level++;
+    $floor = ($level - 1) * ($level - 1) * 10; $ceiling = $level * $level * 10;
+    return ['level' => $level, 'total_xp' => $xp, 'xp_progress' => max(0, $xp - $floor), 'xp_needed' => max(1, $ceiling - $floor), 'xp_to_next' => max(0, $ceiling - $xp), 'streak' => max(0, (int)($player['streak'] ?? 0)), 'spice_tolerance' => max(0, min(8, (int)($player['spice_tolerance'] ?? 8))), 'meals_logged' => max(0, (int)($player['meals_logged'] ?? 0))];
+}
+function sort_newest(array &$entries): void { usort($entries, static function (array $a, array $b): int { $time = strcmp((string)($b['timestamp_utc'] ?? ''), (string)($a['timestamp_utc'] ?? '')); return $time !== 0 ? $time : ((int)($b['id'] ?? 0) <=> (int)($a['id'] ?? 0)); }); }
+function public_entry(array $entry): array {
+    $public = ['id' => (int)($entry['id'] ?? 0), 'player' => (string)($entry['player'] ?? ''), 'meal' => (string)($entry['meal'] ?? ''), 'rating' => (int)($entry['rating'] ?? 0), 'new' => (bool)($entry['new'] ?? false), 'xp_gained' => (int)($entry['xp_gained'] ?? 0), 'level_after' => (int)($entry['level_after'] ?? 1), 'timestamp_utc' => (string)($entry['timestamp_utc'] ?? '')];
+    if (isset($entry['summary']) && is_array($entry['summary'])) $public['summary'] = $entry['summary']; return $public;
+}
+function normalize_store($raw): array {
+    $store = is_array($raw) ? $raw : []; $store['version'] = 2; $store['players'] = is_array($store['players'] ?? null) ? $store['players'] : []; $store['entries'] = is_array($store['entries'] ?? null) ? $store['entries'] : [];
+    if (count($store['entries']) === 0) foreach ($store['players'] as $player => $data) foreach (is_array($data['entries'] ?? null) ? $data['entries'] : [] as $old) { if (!is_array($old)) continue; $old['player'] = (string)$player; $old['id'] = (int)($old['id'] ?? 0); if ($old['id'] < 1) $old['id'] = count($store['entries']) + 1; $old['timestamp_utc'] = (string)($old['timestamp_utc'] ?? gmdate('c')); $store['entries'][] = public_entry($old); }
+    $maxId = 0; foreach ($store['entries'] as $entry) $maxId = max($maxId, (int)($entry['id'] ?? 0)); $store['next_id'] = max($maxId + 1, (int)($store['next_id'] ?? 1)); return $store;
+}
+function meal_catalog(): array { return ['noodle-masterpiece' => ['name' => 'Noodle Masterpiece', 'spice' => 8], 'scrap-mechanic-snack' => ['name' => 'Scrap Mechanic Snack', 'spice' => 3], 'boss' => ['name' => 'Boss Meal', 'spice' => 6], 'fruit-fuel' => ['name' => 'Fruit Fuel', 'spice' => 1]]; }
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') fail('method_not_allowed', 405, ['Allow' => 'GET']);
+$placeholder = 'REPLACE_WITH_A_LONG_RANDOM_TOKEN'; $configPaths = [dirname(__DIR__) . DIRECTORY_SEPARATOR . 'foodgame-config.php', dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'foodgame-config.php'];
+foreach ($configPaths as $configPath) { if (!is_file($configPath)) continue; $config = require $configPath; if (is_array($config) && isset($config['api_key']) && !defined('FOODGAME_API_KEY')) define('FOODGAME_API_KEY', (string)$config['api_key']); if (is_array($config) && isset($config['storage_dir']) && !defined('FOODGAME_STORAGE_DIR')) define('FOODGAME_STORAGE_DIR', (string)$config['storage_dir']); if (defined('FOODGAME_API_KEY')) break; }
+$secret = defined('FOODGAME_API_KEY') ? (string)constant('FOODGAME_API_KEY') : $placeholder; $key = isset($_GET['key']) && is_string($_GET['key']) ? $_GET['key'] : '';
+if ($secret === '' || $secret === $placeholder || $key === '' || !hash_equals($secret, $key)) respond(['ok' => false, 'error' => 'unauthorized'], 401);
+$storage = defined('FOODGAME_STORAGE_DIR') ? (string)constant('FOODGAME_STORAGE_DIR') : dirname(__DIR__) . DIRECTORY_SEPARATOR . 'foodgame-data';
+if (!is_dir($storage) && !@mkdir($storage, 0700, true)) fail('storage_unavailable', 500); if (!is_writable($storage)) fail('storage_unavailable', 500); @chmod($storage, 0700);
+$ip = (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown'); $rateLock = @fopen($storage . DIRECTORY_SEPARATOR . 'rate.lock', 'c+');
+if ($rateLock === false || !@flock($rateLock, LOCK_EX)) { if (is_resource($rateLock)) @fclose($rateLock); fail('rate_limit_unavailable', 503); }
+$rateFile = $storage . DIRECTORY_SEPARATOR . 'rate-' . hash('sha256', $ip) . '.json'; $rateRaw = @file_get_contents($rateFile); $hits = json_decode(is_string($rateRaw) ? $rateRaw : '[]', true); $hits = is_array($hits) ? array_values(array_filter($hits, static fn($hit): bool => is_numeric($hit) && (int)$hit > time() - 60)) : [];
+if (count($hits) >= 60) { @flock($rateLock, LOCK_UN); @fclose($rateLock); fail('rate_limited', 429, ['Retry-After' => '60']); }
+$hits[] = time(); if (@file_put_contents($rateFile, json_encode($hits, JSON_UNESCAPED_SLASHES), LOCK_EX) === false) { @flock($rateLock, LOCK_UN); @fclose($rateLock); fail('rate_limit_unavailable', 503); } @chmod($rateFile, 0600); @flock($rateLock, LOCK_UN); @fclose($rateLock);
+$dataFile = $storage . DIRECTORY_SEPARATOR . 'foodgame-data.json'; $dataLock = @fopen($storage . DIRECTORY_SEPARATOR . 'foodgame-data.lock', 'c+');
+if ($dataLock === false || !@flock($dataLock, LOCK_EX)) { if (is_resource($dataLock)) @fclose($dataLock); fail('storage_unavailable', 500); }
+$raw = @file_get_contents($dataFile); $store = normalize_store(json_decode(is_string($raw) ? $raw : '', true)); $catalog = meal_catalog(); $action = isset($_GET['action']) && is_string($_GET['action']) ? $_GET['action'] : 'stats';
+$player = isset($_GET['player']) && is_string($_GET['player']) && $_GET['player'] !== '' ? $_GET['player'] : 'Cooper'; $playerProvided = isset($_GET['player']) && is_string($_GET['player']) && $_GET['player'] !== '';
+if (!preg_match('/^[A-Za-z0-9 _-]{1,32}$/', $player)) { @flock($dataLock, LOCK_UN); @fclose($dataLock); fail('invalid_player', 400); }
+if (!in_array($action, ['stats', 'entries', 'feed', 'activity', 'log'], true)) { @flock($dataLock, LOCK_UN); @fclose($dataLock); fail('invalid_action', 400); }
+$allEntries = array_values(array_filter($store['entries'], 'is_array')); sort_newest($allEntries);
+if ($action === 'feed') { $feed = $playerProvided ? array_values(array_filter($allEntries, static fn(array $entry): bool => ($entry['player'] ?? '') === $player)) : $allEntries; $feed = array_map('public_entry', array_slice($feed, 0, 25)); @flock($dataLock, LOCK_UN); @fclose($dataLock); respond(['ok' => true, 'feed' => $feed]); }
+if ($action === 'activity') {
+    $activity = $playerProvided ? array_values(array_filter($allEntries, static fn(array $entry): bool => ($entry['player'] ?? '') === $player)) : $allEntries; $since = isset($_GET['since']) && is_string($_GET['since']) ? trim($_GET['since']) : '';
+    if ($since !== '') { if (ctype_digit($since)) { $after = (int)$since; $activity = array_values(array_filter($activity, static fn(array $entry): bool => (int)($entry['id'] ?? 0) > $after)); } elseif (($sinceTime = strtotime($since)) !== false) { $activity = array_values(array_filter($activity, static fn(array $entry): bool => (int)(strtotime((string)($entry['timestamp_utc'] ?? '')) ?: 0) > $sinceTime)); } else { @flock($dataLock, LOCK_UN); @fclose($dataLock); fail('invalid_since', 400); } }
+    $nextSince = 0; foreach ($allEntries as $entry) $nextSince = max($nextSince, (int)($entry['id'] ?? 0)); $activity = array_map('public_entry', array_slice($activity, 0, 25)); @flock($dataLock, LOCK_UN); @fclose($dataLock); respond(['ok' => true, 'player' => $playerProvided ? $player : null, 'since' => $since === '' ? null : $since, 'activity' => $activity, 'next_since' => $nextSince]);
+}
+if ($action === 'stats' || $action === 'entries') { $current = is_array($store['players'][$player] ?? null) ? $store['players'][$player] : blank_player(); $stats = player_stats($current); $entries = array_values(array_filter($allEntries, static fn(array $entry): bool => ($entry['player'] ?? '') === $player)); $entries = array_map('public_entry', array_slice($entries, 0, 25)); @flock($dataLock, LOCK_UN); @fclose($dataLock); if ($action === 'entries') respond(['ok' => true, 'player' => $player, 'entries' => $entries]); respond(['ok' => true, 'player' => $player, 'stats' => $stats, 'entries' => $entries]); }
+$meal = isset($_GET['meal']) && is_string($_GET['meal']) ? $_GET['meal'] : ''; if (!isset($catalog[$meal])) { @flock($dataLock, LOCK_UN); @fclose($dataLock); fail('invalid_meal', 400); }
+$ratingRaw = isset($_GET['rating']) && is_string($_GET['rating']) ? $_GET['rating'] : ''; if (!preg_match('/^(10|[0-9])$/', $ratingRaw)) { @flock($dataLock, LOCK_UN); @fclose($dataLock); fail('invalid_rating', 400); } $rating = (int)$ratingRaw;
+$newRaw = isset($_GET['new']) && is_string($_GET['new']) ? strtolower($_GET['new']) : '0'; $isNew = in_array($newRaw, ['1', 'true', 'yes', 'on'], true); $current = is_array($store['players'][$player] ?? null) ? $store['players'][$player] : blank_player(); $spice = (int)$catalog[$meal]['spice']; $tolerance = max(0, min(8, (int)($current['spice_tolerance'] ?? 8)));
+$chance = 0; $resultName = 'debuffed'; $heat = 0; $duration = 0; $debuffed = false; if ($tolerance >= $spice) { $resultName = 'easy'; $chance = 100; } elseif ($tolerance >= 4) { $resultName = 'hot'; $chance = (int)round(50 + ($tolerance - 4) * 12.5); } elseif ($tolerance >= 1) { $resultName = 'low-tolerance'; $chance = 30; $heat = random_int(0, 5); $duration = 60; } else { $debuffed = true; }
+$success = $chance > 0 && random_int(1, 100) <= $chance; $buffs = []; if ($meal === 'noodle-masterpiece' && $success) $buffs = ['highly energized (2x base energy)', 'heated engine (+70% speed, +20% acceleration)', 'energy consumption 2x', 'duration 15 minutes']; $xp = 10 + ($isNew ? 15 : 0) + ($rating >= 7 ? 5 : 0) + ($meal === 'boss' ? 20 : 0);
+$totalXp = max(0, (int)($current['total_xp'] ?? 0)) + $xp; $level = max(1, (int)($current['level'] ?? 1)); while ($totalXp >= $level * $level * 10) $level++;
+$entry = ['id' => (int)$store['next_id'], 'player' => $player, 'meal' => $meal, 'rating' => $rating, 'new' => $isNew, 'xp_gained' => $xp, 'level_after' => $level, 'timestamp_utc' => gmdate('c'), 'summary' => ['meal_name' => $catalog[$meal]['name'], 'spice' => $spice, 'spice_result' => $resultName, 'buff_chance_percent' => $chance, 'buffs_applied' => $buffs, 'heat_damage_per_4_seconds' => $heat, 'heat_duration_seconds' => $duration, 'debuffed' => $debuffed]];
+$store['next_id']++; $current['level'] = $level; $current['total_xp'] = $totalXp; $current['streak'] = max(0, (int)($current['streak'] ?? 0)) + 1; $current['spice_tolerance'] = $tolerance; $current['meals_logged'] = max(0, (int)($current['meals_logged'] ?? 0)) + 1; $store['players'][$player] = $current; $store['entries'][] = public_entry($entry);
+$encoded = json_encode($store, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR); if (!atomic_write($dataFile, $encoded . PHP_EOL)) { @flock($dataLock, LOCK_UN); @fclose($dataLock); fail('storage_write_failed', 500); }
+$latest = array_values(array_filter($store['entries'], static fn(array $item): bool => ($item['player'] ?? '') === $player)); sort_newest($latest); $latest = array_map('public_entry', array_slice($latest, 0, 25)); $stats = player_stats($current); @flock($dataLock, LOCK_UN); @fclose($dataLock);
+respond(['ok' => true, 'player' => $player, 'meal' => $meal, 'rating' => $rating, 'new' => $isNew, 'xp_gained' => $xp, 'entry' => public_entry($entry), 'stats' => $stats, 'entries' => $latest]);
