@@ -13,7 +13,7 @@ A bright, single-page vanilla HTML/CSS/JavaScript game for Cooper (age 9), backe
 
 Every API request requires the `key` query parameter. A missing or wrong key returns HTTP 401 and exactly `{"ok":false,"error":"unauthorized"}`. The API uses `hash_equals` for constant-time comparison.
 
-Prefer a config file above the web root. Because `foodgame/api.php` loads `../foodgame-config.php`, for a typical cPanel layout create `/home/ACCOUNT/foodgame-config.php` while the public files are in `/home/ACCOUNT/public_html/foodgame/`:
+Prefer a config file above the web root. The API checks the required sibling path `../foodgame-config.php` and also checks one more parent directory for a cPanel account-home config. For a typical cPanel layout with public files in `/home/ACCOUNT/public_html/foodgame/`, create the private file `/home/ACCOUNT/foodgame-config.php`:
 
 ```php
 <?php

@@ -7,8 +7,8 @@ function atomic_save(string $file,string $text): bool { $tmp=tempnam(dirname($fi
 function blank_player(): array { return ['level'=>1,'total_xp'=>0,'streak'=>0,'spice_tolerance'=>8,'entries'=>[]]; }
 function stats(array $p): array { $level=max(1,(int)($p['level']??1)); $xp=max(0,(int)($p['total_xp']??0)); $floor=($level-1)*($level-1)*10; $ceiling=$level*$level*10; return ['level'=>$level,'total_xp'=>$xp,'xp_progress'=>max(0,$xp-$floor),'xp_needed'=>max(1,$ceiling-$floor),'xp_to_next'=>$ceiling,'streak'=>max(0,(int)($p['streak']??0)),'spice_tolerance'=>max(0,min(8,(int)($p['spice_tolerance']??8))),'meals_logged'=>count($p['entries']??[])]; }
 function recent(array $p): array { return array_values(array_slice(array_reverse(is_array($p['entries']??null)?$p['entries']:[]),0,25)); }
-$placeholder='REPLACE_WITH_A_LONG_RANDOM_TOKEN'; $config=dirname(__DIR__).DIRECTORY_SEPARATOR.'foodgame-config.php';
-if(is_file($config)){ $loaded=require $config; if(is_array($loaded)&&isset($loaded['api_key'])&&!defined('FOODGAME_API_KEY'))define('FOODGAME_API_KEY',(string)$loaded['api_key']); }
+$placeholder='REPLACE_WITH_A_LONG_RANDOM_TOKEN'; $configFiles=[dirname(__DIR__).DIRECTORY_SEPARATOR.'foodgame-config.php',dirname(__DIR__,2).DIRECTORY_SEPARATOR.'foodgame-config.php'];
+foreach($configFiles as $config){if(is_file($config)){$loaded=require $config;if(is_array($loaded)&&isset($loaded['api_key'])&&!defined('FOODGAME_API_KEY'))define('FOODGAME_API_KEY',(string)$loaded['api_key']);if(defined('FOODGAME_API_KEY'))break;}}
 $secret=defined('FOODGAME_API_KEY')?(string)constant('FOODGAME_API_KEY'):$placeholder; $key=$_GET['key']??'';
 if(!is_string($key)||$secret===''||$secret===$placeholder||!hash_equals($secret,$key))out(['ok'=>false,'error'=>'unauthorized'],401);
 $dir=defined('FOODGAME_STORAGE_DIR')?(string)constant('FOODGAME_STORAGE_DIR'):dirname(__DIR__).DIRECTORY_SEPARATOR.'foodgame-data';
@@ -22,8 +22,8 @@ $dataFile=$dir.DIRECTORY_SEPARATOR.'foodgame-data.json'; $lock=@fopen($dir.DIREC
 if($lock===false||!@flock($lock,LOCK_EX)){if(is_resource($lock))@fclose($lock);out(['ok'=>false,'error'=>'storage_unavailable'],500);}
 $store=json_decode((string)@file_get_contents($dataFile),true); if(!is_array($store))$store=['version'=>1,'players'=>[]]; if(!is_array($store['players']??null))$store['players']=[];
 $player=$_GET['player']??'Cooper'; $action=$_GET['action']??'stats';
-if(!is_string($player)||!preg_match('/^[A-Za-z0-9 _-]{1,32}$/',$player)){$e=$lock;@flock($e,LOCK_UN);@fclose($e);out(['ok'=>false,'error'=>'invalid_player'],400);}
-if(!is_string($action)||!in_array($action,['stats','entries','log'],true)){$e=$lock;@flock($e,LOCK_UN);@fclose($e);out(['ok'=>false,'error'=>'invalid_action'],400);}
+if(!is_string($player)||!preg_match('/^[A-Za-z0-9 _-]{1,32}$/',$player)){@flock($lock,LOCK_UN);@fclose($lock);out(['ok'=>false,'error'=>'invalid_player'],400);}
+if(!is_string($action)||!in_array($action,['stats','entries','log'],true)){@flock($lock,LOCK_UN);@fclose($lock);out(['ok'=>false,'error'=>'invalid_action'],400);}
 $catalog=['noodle-masterpiece'=>['name'=>'Noodle Masterpiece','spice'=>8],'scrap-mechanic-snack'=>['name'=>'Scrap Mechanic Snack','spice'=>3],'boss'=>['name'=>'Boss Meal','spice'=>6],'fruit-fuel'=>['name'=>'Fruit Fuel','spice'=>1]];
 $meal=$_GET['meal']??null; if($meal!==null&&(!is_string($meal)||!isset($catalog[$meal]))){@flock($lock,LOCK_UN);@fclose($lock);out(['ok'=>false,'error'=>'invalid_meal'],400);}
 $rating=null; if(isset($_GET['rating'])){$r=$_GET['rating'];if(!is_string($r)||!preg_match('/^(10|[0-9])$/',$r)){@flock($lock,LOCK_UN);@fclose($lock);out(['ok'=>false,'error'=>'invalid_rating'],400);}$rating=(int)$r;}
