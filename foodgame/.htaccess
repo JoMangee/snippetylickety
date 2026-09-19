@@ -1,0 +1,6 @@
+Options -Indexes
+RewriteEngine On
+RewriteRule ^foodgame-data(?:/|$) - [F,L]
+RewriteRule ^rate-[^/]+\.json$ - [F,L]
+RewriteRule ^rate\.lock$ - [F,L]
+RewriteRule ^foodgame-data\.lock$ - [F,L]
