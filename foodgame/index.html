@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#ffcf33">
-  <title>Cooper's Foodgame</title>
+  <meta name="theme-color" content="#ffcff3">
+  <title>Foodgame</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="app-shell">
     <a class="back-link" href="../">← Back to Snippetyllickety</a>
     <header class="hero">
-      <p class="eyebrow">COOPER'S BRIGHT BITE LAB</p>
+      <p class="eyebrow" id="player-brand"></p>
       <h1>FOODGAME!</h1>
       <p>Log tasty meals, earn XP, level up, and build your spice tolerance.</p>
     </header>
@@ -35,11 +35,11 @@
     <section class="panel log-panel">
       <div class="panel-heading"><h2>Log a meal</h2><span class="badge warm">BIG XP</span></div>
       <form id="meal-form">
-        <label>Player<input id="player" name="player" value="Cooper" maxlength="32" autocomplete="nickname" required></label>
-        <label>Meal<select id="meal" name="meal"><option value="noodle-masterpiece">Noodle Masterpiece · spice 8</option><option value="scrap-mechanic-snack">Scrap Mechanic Snack · spice 3</option><option value="boss">Boss Meal · victory bonus</option><option value="fruit-fuel">Fruit Fuel · spice 1</option></select></label>
+        <label>Display name<input id="player" name="player" value="" maxlength="32" autocomplete="nickname" readonly required></label>
+        <label>Meal<select id="meal" name="meal"><option value="noodle-masterpiece">Noodle Masterpiece ↗ spice 8</option><option value="scrap-mechanic-snack">Scrap Mechanic Snack ↗ spice 3</option><option value="boss">Boss Meal ↗ victory bonus</option><option value="fruit-fuel">Fruit Fuel ↗ spice 1</option></select></label>
         <label>Rating (0–10)<input id="rating" name="rating" type="number" min="0" max="10" step="1" value="8" required></label>
         <label class="check-row"><input id="new-food" name="new" type="checkbox"> First time eating this food <span>(+15 XP)</span></label>
-        <button class="primary-button" type="submit">🍜 LOG FOR ME</button>
+        <button class="primary-button" type="submit">🍽 LOG FOR ME</button>
       </form>
       <p id="status" class="status" role="status" aria-live="polite">Add your API key in Settings to begin.</p>
     </section>
@@ -54,7 +54,7 @@
       <article class="panel"><div class="panel-heading"><h2>Activity feed</h2><button id="poll-activity" class="mini-button" type="button">Poll newer</button></div><div id="activity" class="entry-list"><p class="small-copy">Activity from all players appears here.</p></div></article>
     </section>
     <section class="panel feed-panel"><div class="panel-heading"><h2>Everyone's feed</h2><span class="badge">NEWEST FIRST</span></div><div id="feed" class="entry-list"><p class="small-copy">Load the feed after saving your key.</p></div></section>
-    <footer>Vanilla HTML / CSS / JavaScript · one PHP JSON endpoint · locked local JSON storage</footer>
+    <footer>Vanilla HTML / CSS / JavaScript ↗ one PHP JSON endpoint ↗ locked local JSON storage</footer>
   </main>
   <script type="module" src="js/api.js"></script>
   <script type="module" src="js/ui.js"></script>

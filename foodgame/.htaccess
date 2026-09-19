@@ -1,5 +1,10 @@
 Options -Indexes
 RewriteEngine On
+
+# The game and API must never be served over plain HTTP.
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L,NE]
+
 RewriteRule ^foodgame-data(?:/|$) - [F,L]
 RewriteRule ^rate-[^/]+\.json$ - [F,L]
 RewriteRule ^rate\.lock$ - [F,L]
