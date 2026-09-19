@@ -1,6 +1,6 @@
 deployment:
   tasks:
-    - export DEPLOYPATH=/home2/meshnet/bbb.mesh.net.nz/foodgame/
+    - export DEPLOYPATH=/home/ACCOUNT/subdir/foodgame/
     - /bin/cp -rf foodgame/* $DEPLOYPATH
     - find $DEPLOYPATH -type d -exec chmod 755 {} +
     - find $DEPLOYPATH -type f -exec chmod 644 {} +
