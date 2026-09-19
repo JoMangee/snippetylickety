@@ -7,7 +7,7 @@ export async function get(key, params = {}) {
   const token = String(key || '').trim();
   if (!token) throw new Error('Add the API key in Settings first.');
   const query = new URLSearchParams({ ...params, key: token });
-  const response = await fetch(`${API_BASE_URL}?${query.toString()}`, { method: 'GET',
+  const response = await fetch(`${API_BASE}?${query.toString()}`, { method: 'GET',
     headers: { Accept: 'application/json' },
     credentials: 'same-origin' });
   let body;
