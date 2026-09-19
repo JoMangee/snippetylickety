@@ -1,4 +1,6 @@
-const API_BASE_URL = 'https://bbb.mesh.net.nz/foodgame/api.php';
+// API base: same-origin by default, override via window.FOODGAME_CONFIG
+const API_BASE = (window.FOODGAME_CONFIG && window.FOODGAME_CONFIG.apiBase)
+|| window.location.origin + '/foodgame/api.php';
 
 /** Small GET-only client. The key is deliberately added to every request. */
 export async function get(key, params = {}) {
