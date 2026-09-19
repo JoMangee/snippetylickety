@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "meals": {
+    "noodle-masterpiece": {
+      "id": "noodle-masterpiece",
+      "name": "Noodle Masterpiece",
+      "spice": 8,
+      "buffs": [
+        "highly energized (2x base energy)",
+        "heated engine (+70% speed, +20% acceleration)",
+        "energy consumption 2x",
+        "duration 15 minutes"
+      ],
+      "xp_base": 10
+    },
+    "scrap-mechanic-snack": {
+      "id": "scrap-mechanic-snack",
+      "name": "Scrap Mechanic Snack",
+      "spice": 3,
+      "buffs": [],
+      "xp_base": 10
+    },
+    "boss": {
+      "id": "boss",
+      "name": "Boss Meal",
+      "spice": 6,
+      "buffs": [],
+      "xp_base": 10
+    },
+    "fruit-fuel": {
+      "id": "fruit-fuel",
+      "name": "Fruit Fuel",
+      "spice": 1,
+      "buffs": [],
+      "xp_base": 10
+    },
+    "weetbix": {
+      "id": "weetbix",
+      "name": "Weetbix",
+      "spice": 0,
+      "buffs": [],
+      "xp_base": 15
+    }
+  },
+  "meals_add": [
+    "weetbix"
+  ]
+}
