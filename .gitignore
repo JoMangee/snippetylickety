@@ -1,3 +1,4 @@
 .env
 foodgame/.env
 foodgame/data/
+.deploy.env
