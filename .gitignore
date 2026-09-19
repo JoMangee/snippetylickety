@@ -2,3 +2,4 @@
 foodgame/.env
 foodgame/data/
 .deploy.env
+.cpanel.yml
