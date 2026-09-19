@@ -1,17 +1,16 @@
 <?php
+declare(strict_types=1);
 // .env loader - server config, never commit real values
-if (file_exists(_DIR_ . '/.env')) {
-    foreach (file(_DIR_ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+if (file_exists(__DIR__ . '/.env')) {
+    foreach (file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
         if (str_starts_with($line, '#') || !str_contains($line, '=')) continue;
-            [$k, $v] = explode('=', $line, 2);
-            putenv(trim($k) . '=' . trim($v));
-        }
+        [$k, $v] = explode('=', $line, 2);
+        putenv(trim($k) . '=' . trim($v));
     }
 }
 $TOKEN = getenv('FOODGAME_TOKEN') ?: '';
-$DATA_DIR = getenv('FOODGAME_DATA_DIR') ?: _DIR_ . '/data';
+$DATA_DIR = getenv('FOODGAME_DATA_DIR') ?: __DIR__ . '/data';
 $RATE_LIMIT = (int)(getenv('FOODGAME_RATE_LIMIT') ?: 60);
-declare(strict_types=1);
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 header('Content-Type: application/json; charset=utf-8');
@@ -55,19 +54,19 @@ function meal_catalog(): array { return ['noodle-masterpiece' => ['name' => 'Noo
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') fail('method_not_allowed', 405, ['Allow' => 'GET']);
 $placeholder = 'REPLACE_WITH_A_LONG_RANDOM_TOKEN'; $configPaths = [dirname(__DIR__) . DIRECTORY_SEPARATOR . 'foodgame-config.php', dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'foodgame-config.php'];
 foreach ($configPaths as $configPath) { if (!is_file($configPath)) continue; $config = require $configPath; if (is_array($config) && isset($config['api_key']) && !defined('FOODGAME_API_KEY')) define('FOODGAME_API_KEY', (string)$config['api_key']); if (is_array($config) && isset($config['storage_dir']) && !defined('FOODGAME_STORAGE_DIR')) define('FOODGAME_STORAGE_DIR', (string)$config['storage_dir']); if (defined('FOODGAME_API_KEY')) break; }
-$secret = defined('FOODGAME_API_KEY') ? (string)constant('FOODGAME_API_KEY') : $placeholder; $key = isset($_GET['key']) && is_string($_GET['key']) ? $_GET['key'] : '';
+$secret = $TOKEN !== '' ? $TOKEN : (defined('FOODGAME_API_KEY') ? (string)constant('FOODGAME_API_KEY') : $placeholder); $key = isset($_GET['key']) && is_string($_GET['key']) ? $_GET['key'] : '';
 if ($secret === '' || $secret === $placeholder || $key === '' || !hash_equals($secret, $key)) respond(['ok' => false, 'error' => 'unauthorized'], 401);
-$storage = defined('FOODGAME_STORAGE_DIR') ? (string)constant('FOODGAME_STORAGE_DIR') : dirname(__DIR__) . DIRECTORY_SEPARATOR . 'foodgame-data';
+$storage = $DATA_DIR;
 if (!is_dir($storage) && !@mkdir($storage, 0700, true)) fail('storage_unavailable', 500); if (!is_writable($storage)) fail('storage_unavailable', 500); @chmod($storage, 0700);
 $ip = (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown'); $rateLock = @fopen($storage . DIRECTORY_SEPARATOR . 'rate.lock', 'c+');
 if ($rateLock === false || !@flock($rateLock, LOCK_EX)) { if (is_resource($rateLock)) @fclose($rateLock); fail('rate_limit_unavailable', 503); }
 $rateFile = $storage . DIRECTORY_SEPARATOR . 'rate-' . hash('sha256', $ip) . '.json'; $rateRaw = @file_get_contents($rateFile); $hits = json_decode(is_string($rateRaw) ? $rateRaw : '[]', true); $hits = is_array($hits) ? array_values(array_filter($hits, static fn($hit): bool => is_numeric($hit) && (int)$hit > time() - 60)) : [];
-if (count($hits) >= 60) { @flock($rateLock, LOCK_UN); @fclose($rateLock); fail('rate_limited', 429, ['Retry-After' => '60']); }
+if (count($hits) >= $RATE_LIMIT) { @flock($rateLock, LOCK_UN); @fclose($rateLock); fail('rate_limited', 429, ['Retry-After' => '60']); }
 $hits[] = time(); if (@file_put_contents($rateFile, json_encode($hits, JSON_UNESCAPED_SLASHES), LOCK_EX) === false) { @flock($rateLock, LOCK_UN); @fclose($rateLock); fail('rate_limit_unavailable', 503); } @chmod($rateFile, 0600); @flock($rateLock, LOCK_UN); @fclose($rateLock);
 $dataFile = $storage . DIRECTORY_SEPARATOR . 'foodgame-data.json'; $dataLock = @fopen($storage . DIRECTORY_SEPARATOR . 'foodgame-data.lock', 'c+');
 if ($dataLock === false || !@flock($dataLock, LOCK_EX)) { if (is_resource($dataLock)) @fclose($dataLock); fail('storage_unavailable', 500); }
 $raw = @file_get_contents($dataFile); $store = normalize_store(json_decode(is_string($raw) ? $raw : '', true)); $catalog = meal_catalog(); $action = isset($_GET['action']) && is_string($_GET['action']) ? $_GET['action'] : 'stats';
-$player = isset($_GET['player']) && is_string($_GET['player']) && $_GET['player'] !== '' ? $_GET['player'] : 'Cooper'; $playerProvided = isset($_GET['player']) && is_string($_GET['player']) && $_GET['player'] !== '';
+$player = isset($_GET['player']) && is_string($_GET['player']) && $_GET['player'] !== '' ? $_GET['player'] : 'CJLBee'; $playerProvided = isset($_GET['player']) && is_string($_GET['player']) && $_GET['player'] !== '';
 if (!preg_match('/^[A-Za-z0-9 _-]{1,32}$/', $player)) { @flock($dataLock, LOCK_UN); @fclose($dataLock); fail('invalid_player', 400); }
 if (!in_array($action, ['stats', 'entries', 'feed', 'activity', 'log'], true)) { @flock($dataLock, LOCK_UN); @fclose($dataLock); fail('invalid_action', 400); }
 $allEntries = array_values(array_filter($store['entries'], 'is_array')); sort_newest($allEntries);
