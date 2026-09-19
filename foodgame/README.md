@@ -16,11 +16,13 @@ A bright, single-page vanilla HTML/CSS/JavaScript game backed by a same-origin P
 1. Select PHP 8.0+ (PHP 8.1+ recommended) in cPanel MultiPHP Manager.
 2. Upload `foodgame/index.html`, `foodgame/api.php`, `foodgame/.htaccess`, this README, the JavaScript files, and the stylesheet to `public_html/foodgame/`.
 3. Create the private `/home/ACCOUNT/foodgame-config.php` and `/home/ACCOUNT/foodgame-data/` paths described below; do not upload either to the public repository.
-4. Confirm that cPanel AutoSSL/Let's Encrypt covers `wp.mesh.net.nz`. Deploy at an HTTPS-served URL, such as `https://wp.mesh.net.nz/foodgame/`.
+4. Confirm that cPanel AutoSSL/Let's Encrypt covers `bbb.mesh.net.nz`. Deploy at `https://bbb.mesh.net.nz/foodgame`.
 5. If HTTPS is not already enforced by the host, keep the included `.htaccess` HTTPS redirect enabled (or add an equivalent `.htaccess` redirect) so every request is forced to HTTPS.
 6. Never serve the game over plain HTTP, including test or shared production links.
 
-The API client is deliberately pinned to the HTTPS API URL `https://wp.mesh.net.nz/foodgame/api.php`; it will not construct or fetch a plain-HTTP URL.
+The root `cpanel.yml` deployment task copies `foodgame/*` to `/home2/meshnet/bbb/foodgame/` and applies the required directory and file permissions. HTTPS remains mandatory.
+
+The API client is deliberately pinned to the HTTPS API URL `https://bbb.mesh.net.nz/foodgame/api.php`; it will not construct or fetch a plain-HTTP URL.
 
 ## Token setup
 
