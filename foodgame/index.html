@@ -1,16 +1,63 @@
 <!doctype html>
-<html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Foodgame // Cooper</title><style>
-:root{--ink:#291538;--pink:#ff4775;--gold:#ffe45b;--mint:#62f0b0;--paper:#fffaf0;--line:#291538}*{box-sizing:border-box}body{margin:0;color:var(--ink);font:16px/1.45 system-ui,sans-serif;background:linear-gradient(135deg,#ff798d,#ffa35e 45%,#b5f4cf)}.wrap{width:min(1100px,100%);margin:auto;padding:20px 16px 45px}.hero,.panel{border:4px solid var(--line);border-radius:20px;box-shadow:7px 7px 0 #291538dd}.hero{padding:25px;text-align:center;background:var(--paper);margin-bottom:18px}.hero h1{margin:14px 0 5px;font-size:clamp(3rem,10vw,6rem);line-height:.9;color:var(--pink);text-shadow:5px 5px var(--gold)}.eyebrow{display:inline-block;padding:4px 10px;background:var(--gold);border:3px solid var(--line);border-radius:99px;font-weight:950;text-transform:uppercase}.hero p{font-weight:700}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.panel{padding:18px;background:#fffaf0f5}.panel h2{margin:0 0 13px;color:#633dff;font-size:1.15rem;text-transform:uppercase}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.stat{text-align:center;padding:10px;background:#fff;border:3px solid var(--line);border-radius:12px}.stat b{display:block;font-size:2rem;line-height:1;color:var(--pink)}.stat span{font-size:.72rem;font-weight:900;text-transform:uppercase}.meter{height:20px;border:3px solid var(--line);border-radius:99px;overflow:hidden;background:#e7ddec}.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pink),#ff9e3d,var(--gold));transition:width .3s}.small{font-size:.85rem;font-weight:700;color:#6d5879}.buff{color:#fff;background:linear-gradient(135deg,#38205f,#7925a3)}.buff h2{color:var(--gold)}.pill{display:inline-block;margin:3px;padding:5px 8px;border-radius:99px;background:var(--mint);color:var(--ink);font-weight:950;font-size:.76rem}.form-row{display:grid;grid-template-columns:1fr 110px;gap:10px}.field{display:block;font-size:.78rem;font-weight:950;text-transform:uppercase}.field input,.field select,.settings input{width:100%;margin-top:4px;padding:10px;border:3px solid var(--line);border-radius:9px;background:#fff;color:inherit;font:inherit}.check{display:flex;gap:8px;align-items:center;margin-top:13px;font-weight:800}.check input{width:20px;height:20px;accent-color:var(--pink)}button{width:100%;margin-top:14px;padding:13px;border:4px solid var(--line);border-radius:11px;background:var(--mint);color:var(--ink);font:950 1rem inherit;cursor:pointer;box-shadow:4px 4px var(--line)}button:hover,button:focus{transform:translate(2px,2px);box-shadow:2px 2px var(--line)}.status{min-height:24px;margin-top:10px;font-weight:900}.bad{color:#c21e47}.good{color:#08764a}.rules{background:#fff0af}.settings{background:#ddfff0}.settings button{padding:9px;background:var(--gold)}.history{grid-column:1/-1}.history-list{display:grid;gap:8px;max-height:350px;overflow:auto}.entry{display:flex;justify-content:space-between;gap:10px;padding:10px;border-left:6px solid var(--pink);border-radius:8px;background:#fff;font-weight:800}.entry small{display:block;color:#745f81}.xp{color:#633dff;white-space:nowrap}.nav{display:inline-block;margin-bottom:14px;color:#633dff;font-weight:950}footer{text-align:center;margin-top:22px;font-size:.8rem;font-weight:800}@media(max-width:700px){.grid{grid-template-columns:1fr}.history{grid-column:auto}.form-row{grid-template-columns:1fr}.entry{display:block}.xp{display:block;margin-top:4px}}
-</style></head><body><main class='wrap'><a class='nav' href='../'>← back to Snippetyllickety</a><header class='hero'><span class='eyebrow'>Cooper's bright bite lab</span><h1>FOODGAME!</h1><p>Log the loot, level up, and test your spice tolerance against the legendary <strong>Noodle Masterpiece</strong>.</p></header><div class='grid'>
-<section class='panel'><h2>Player loadout // Cooper</h2><div class='stats'><div class='stat'><b id='level'>1</b><span>Level</span></div><div class='stat'><b id='xp'>0</b><span>Total XP</span></div><div class='stat'><b id='streak'>0</b><span>Streak</span></div></div><p class='small'><strong id='xp-progress'>0 / 10 XP</strong> until next level</p><div class='meter'><i id='xp-fill'></i></div><p class='small'>Spice tolerance: <strong id='tolerance'>8</strong> / 8 heat points</p></section>
-<section class='panel buff'><h2>Active effect // Noodle Masterpiece</h2><div id='buff-card'><p><strong>Spiciness 8.</strong> Log this masterpiece to roll for exact canon buffs. Duration: <strong>15 minutes</strong>.</p><span class='pill'>2x base energy</span><span class='pill'>+70% speed</span><span class='pill'>+20% acceleration</span><span class='pill'>energy consumption 2x</span></div></section>
-<section class='panel'><h2>Log a meal</h2><form id='meal-form'><div class='form-row'><label class='field'>Meal<select id='meal'><option value='noodle-masterpiece'>Noodle Masterpiece // spice 8</option><option value='scrap-mechanic-snack'>Scrap Mechanic Snack // spice 3</option><option value='boss'>Boss Meal // victory bonus</option><option value='fruit-fuel'>Fruit Fuel // spice 1</option></select></label><label class='field'>Rating<input id='rating' type='number' min='0' max='10' step='1' value='8' required></label></div><label class='check'><input id='new-food' type='checkbox'> First time eating this food (+15 XP)</label><button id='log-button' type='submit'>🍜 LOG FOR ME</button><div id='status' class='status' role='status'></div></form></section>
-<section class='panel rules'><h2>Canon rules // quick read</h2><p><strong>Noodle Masterpiece</strong> is spice level <strong>8</strong> and energy cost is <strong>2x</strong>. At tolerance ≥ spice it is easy. From 8 to 4, buff chance scales 100% to 50%. From under 4 to 1, chance is 30% plus <strong>0–5 heat damage every 4 seconds for 1 minute</strong>. Below 1: debuff.</p><p class='small'>XP: meal 10, new +15, rating ≥7 +5, boss +20. Simple local level curve.</p></section>
-<section class='panel settings'><h2>Settings // local key</h2><label class='field'>API key<input id='api-key' type='password' autocomplete='off' placeholder='Paste deployer key'></label><button id='save-key' type='button'>SAVE KEY &amp; LOAD STATS</button><p class='small'>Stored only in localStorage. tinyNature holds the same key locally. Same-origin only; never paste a real key into public code.</p></section><section class='panel history'><h2>Recent meal log // last 25</h2><div id='history' class='history-list'><p class='small'>Enter the API key to load Cooper's snack log.</p></div></section></div><footer>Vanilla HTML/CSS/JS // local PHP JSON storage // no frameworks // no cloud</footer></main>
-<script>
-(()=>{const $=id=>document.getElementById(id);const tinyNature={get key(){return localStorage.getItem('foodgameApiKey')||''},set key(v){localStorage.setItem('foodgameApiKey',v)}};const names={'noodle-masterpiece':'Noodle Masterpiece','scrap-mechanic-snack':'Scrap Mechanic Snack',boss:'Boss Meal','fruit-fuel':'Fruit Fuel'};const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));const date=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?v:d.toLocaleString()};
-async function api(p){const key=tinyNature.key;if(!key)throw Error('Add the API key in Settings first.');p.key=key;const r=await fetch('api.php?'+new URLSearchParams(p),{headers:{Accept:'application/json'}});const d=await r.json().catch(()=>null);if(!d||d.ok!==true)throw Error(d&&d.error==='unauthorized'?'Unauthorized: check the API key.':(d&&d.error)||'API error');return d}
-function render(d){const s=d.stats||{};$('level').textContent=s.level??1;$('xp').textContent=s.total_xp??0;$('streak').textContent=s.streak??0;$('tolerance').textContent=s.spice_tolerance??8;const p=Number(s.xp_progress||0),n=Math.max(1,Number(s.xp_needed||10));$('xp-progress').textContent=p+' / '+n+' XP';$('xp-fill').style.width=Math.min(100,p/n*100)+'%';const box=$('history');box.textContent='';const es=d.entries||[];if(!es.length)box.innerHTML='<p class="small">No meals logged yet. Be the first snack legend.</p>';es.forEach(e=>{const row=document.createElement('div');row.className='entry';const b=e.buffs_applied&&e.buffs_applied.length?' // BUFFS: '+e.buffs_applied.join(', '):'';row.innerHTML='<div><strong>'+esc(e.meal_name||names[e.meal]||e.meal)+'</strong><small>'+esc(date(e.timestamp))+' · rating '+esc(e.rating)+'/10'+(e.new?' · NEW FOOD':'')+esc(b)+'</small></div><span class="xp">+'+esc(e.xp_gained)+' XP</span>';box.appendChild(row)});if(d.entry){const e=d.entry;$('buff-card').innerHTML=e.buffs_applied&&e.buffs_applied.length?'<h3>🔥 BUFFS ONLINE</h3><p>Exact canon roll succeeded.</p><p>'+e.buffs_applied.map(esc).map(x=>'<span class="pill">'+x+'</span>').join('')+'</p>':'<h3>READY TO COOK</h3><p>Spice result: '+esc(e.spice_result)+'. Buff chance: '+esc(e.buff_chance_percent)+'%.</p>'}}
-async function refresh(){try{render(await api({action:'stats',player:'Cooper'}));$('status').textContent='Stats loaded.';$('status').className='status good'}catch(e){$('status').textContent=e.message;$('status').className='status bad'}}
-$('save-key').onclick=()=>{const k=$('api-key').value.trim();if(!k){$('status').textContent='Paste a key first.';$('status').className='status bad';return}tinyNature.key=k;refresh()};$('meal-form').onsubmit=async ev=>{ev.preventDefault();const b=$('log-button');b.disabled=true;$('status').textContent='Rolling the snack dice…';try{const d=await api({action:'log',player:'Cooper',meal:$('meal').value,rating:$('rating').value,new:$('new-food').checked?'1':'0'});render(d);$('status').textContent='Logged! +'+d.xp_gained+' XP // level '+d.stats.level;$('status').className='status good'}catch(e){$('status').textContent='Log failed: '+e.message;$('status').className='status bad'}finally{b.disabled=false}};if(tinyNature.key){$('api-key').value=tinyNature.key;refresh()}})();
-</script></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffcf33">
+  <title>Cooper's Foodgame</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <a class="back-link" href="../">← Back to Snippetyllickety</a>
+    <header class="hero">
+      <p class="eyebrow">COOPER'S BRIGHT BITE LAB</p>
+      <h1>FOODGAME!</h1>
+      <p>Log tasty meals, earn XP, level up, and build your spice tolerance.</p>
+    </header>
+    <section class="dashboard" aria-label="Player dashboard">
+      <article class="panel player-panel">
+        <div class="panel-heading"><h2>Player stats</h2><span id="connection-dot" class="dot" aria-hidden="true"></span></div>
+        <div class="stats-grid">
+          <div class="stat"><strong id="level">1</strong><span>Level</span></div>
+          <div class="stat"><strong id="total-xp">0</strong><span>Total XP</span></div>
+          <div class="stat"><strong id="streak">0</strong><span>Streak</span></div>
+          <div class="stat"><strong id="tolerance">8</strong><span>Spice tolerance</span></div>
+        </div>
+        <p id="xp-copy" class="small-copy">0 / 10 XP until next level</p>
+        <div class="progress-track" aria-label="XP progress"><span id="xp-fill"></span></div>
+      </article>
+      <article class="panel buff-panel">
+        <div class="panel-heading"><h2>Active effect</h2><span class="badge">NOODLE MASTERPIECE</span></div>
+        <div id="buff-card" class="buff-card"><p><strong>Spiciness 8.</strong> Log the masterpiece to roll for exact canon buffs.</p><div class="pill-row"><span class="pill">2× base energy</span><span class="pill">+70% speed</span><span class="pill">+20% acceleration</span><span class="pill">15 minutes</span></div></div>
+      </article>
+    </section>
+    <section class="panel log-panel">
+      <div class="panel-heading"><h2>Log a meal</h2><span class="badge warm">BIG XP</span></div>
+      <form id="meal-form">
+        <label>Player<input id="player" name="player" value="Cooper" maxlength="32" autocomplete="nickname" required></label>
+        <label>Meal<select id="meal" name="meal"><option value="noodle-masterpiece">Noodle Masterpiece · spice 8</option><option value="scrap-mechanic-snack">Scrap Mechanic Snack · spice 3</option><option value="boss">Boss Meal · victory bonus</option><option value="fruit-fuel">Fruit Fuel · spice 1</option></select></label>
+        <label>Rating (0–10)<input id="rating" name="rating" type="number" min="0" max="10" step="1" value="8" required></label>
+        <label class="check-row"><input id="new-food" name="new" type="checkbox"> First time eating this food <span>(+15 XP)</span></label>
+        <button class="primary-button" type="submit">🍜 LOG FOR ME</button>
+      </form>
+      <p id="status" class="status" role="status" aria-live="polite">Add your API key in Settings to begin.</p>
+    </section>
+    <section class="panel settings-panel">
+      <div class="panel-heading"><h2>Settings</h2><span class="badge cool">LOCAL KEY</span></div>
+      <label>API key<input id="api-key" type="password" autocomplete="off" placeholder="Paste your private deployer key"></label>
+      <div class="settings-actions"><button id="save-key" class="secondary-button" type="button">Save key &amp; load stats</button><button id="refresh" class="quiet-button" type="button">Refresh all</button></div>
+      <p class="small-copy">The key is stored only in this browser's localStorage. Never put a real key in public code.</p>
+    </section>
+    <section class="two-column">
+      <article class="panel"><div class="panel-heading"><h2>My history</h2><span class="badge cool">LATEST 25</span></div><div id="history" class="entry-list"><p class="small-copy">Your logged meals will appear here.</p></div></article>
+      <article class="panel"><div class="panel-heading"><h2>Activity feed</h2><button id="poll-activity" class="mini-button" type="button">Poll newer</button></div><div id="activity" class="entry-list"><p class="small-copy">Activity from all players appears here.</p></div></article>
+    </section>
+    <section class="panel feed-panel"><div class="panel-heading"><h2>Everyone's feed</h2><span class="badge">NEWEST FIRST</span></div><div id="feed" class="entry-list"><p class="small-copy">Load the feed after saving your key.</p></div></section>
+    <footer>Vanilla HTML / CSS / JavaScript · one PHP JSON endpoint · locked local JSON storage</footer>
+  </main>
+  <script type="module" src="js/api.js"></script>
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>
