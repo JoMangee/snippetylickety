@@ -9,7 +9,41 @@ function entryMarkup(entry, includePlayer = false) { const visiblePlayer = Strin
 export function setStatus(message, good = false) { const node = $('status'); if (!node) return; node.textContent = message; node.className = `status${good ? ' good' : ' bad'}`; }
 export function setConnected(connected) { $('connection-dot')?.classList.toggle('online', connected); }
 export function renderStats(data) { const stats = data?.stats || {}; text('level', stats.level ?? 1); text('total-xp', stats.total_xp ?? 0); text('streak', stats.streak ?? 0); text('tolerance', stats.spice_tolerance ?? 8); const progress = Number(stats.xp_progress ?? 0); const needed = Math.max(1, Number(stats.xp_needed ?? 10)); text('xp-copy', `${progress} / ${needed} XP until next level`); const fill = $('xp-fill'); if (fill) fill.style.width = `${Math.min(100, Math.max(0, progress / needed * 100))}%`; }
-export function renderBuff(entry) { const card = $('buff-card'); if (!card) return; const summary = entry?.summary; if (!summary) { card.innerHTML = '<p>Ready to cook! Noodle Masterpiece is spice 8 and lasts 15 minutes when the roll succeeds.</p>'; return; } const buffs = summary.buffs_applied || []; card.innerHTML = buffs.length ? `<h3>🍜 BUFFS ONLINE</h3><p>Exact canon roll succeeded: ${escape(summary.spice_result)}.</p><div class="pill-row">${buffs.map((buff) => `<span class="pill">${escape(buff)}</span>`).join('')}</div>` : `<h3>READY TO COOK</h3><p>Spice result: ${escape(summary.spice_result || 'debuffed')}. Buff chance: ${escape(summary.buff_chance_percent ?? 0)}%.</p>`; }
+export function renderBuff(data) {
+    const card = $('buff-card');
+    if (!card) return;
+
+    const effects = Array.isArray(data?.effects) ? data.effects : [];
+    const inventory = Array.isArray(data?.inventory) ? data.inventory : [];
+
+    if (!effects.length && !inventory.length) {
+        card.innerHTML = '<h3>READY TO COOK</h3><p>No active effects or keyword items yet.</p>';
+        return;
+    }
+
+    const effectMarkup = effects.length
+        ? `<h3>🍜 ACTIVE EFFECTS</h3><div>${effects.map((effect) => {
+            const value = effect.unit === 'multiplier'
+                ? `${effect.value}x`
+                : effect.unit === 'percent'
+                    ? `${effect.value}%`
+                    : effect.unit === 'item'
+                        ? ''
+                        : `+${effect.value}`;
+            const remaining = effect.remaining_seconds === null
+                ? 'persistent'
+                : `${Math.max(1, Math.ceil(Number(effect.remaining_seconds) / 60))} min remaining`;
+            return `<span><strong>${escape(effect.keyword)}</strong>${value ? `: ${escape(value)}` : ''} <small>${escape(remaining)}</small></span>`;
+        }).join('')}</div>`
+        : '<h3>NO ACTIVE EFFECTS</h3>';
+
+    const inventoryMarkup = inventory.length
+        ? `<h3>🎒 KEYWORD INVENTORY</h3><div>${inventory.map((keyword) => `<span>${escape(keyword)}</span>`).join('')}</div>`
+        : '<p>No keyword items carried.</p>';
+
+    card.innerHTML = effectMarkup + inventoryMarkup;
+}
+
 export function renderHistory(entries) { list('history', entries.slice().reverse(), (entry) => entryMarkup(entry)); }
 export function renderFeed(entries) { list('feed', entries.slice().reverse(), (entry) => entryMarkup(entry, true)); }
 export function renderActivity(entries) { list('activity', entries.slice().reverse(), (entry) => entryMarkup(entry, true)); }

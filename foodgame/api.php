@@ -95,6 +95,119 @@ function request_string(string $name): ?string
     return is_string($value) ? $value : null;
 }
 
+function effect_number(string $raw): int|float
+{
+    $number = (float) $raw;
+    return fmod($number, 1.0) === 0.0 ? (int) $number : $number;
+}
+
+function buff_duration_seconds(string $buff, bool $sum = false): ?int
+{
+    $matches = [];
+    if (!preg_match_all('/\bfor\s+(\d+)\s+(?:more\s+)?minutes?\b/i', $buff, $matches) || empty($matches[1])) {
+        return null;
+    }
+    $minutes = $sum ? array_sum(array_map('intval', $matches[1])) : (int) $matches[1][0];
+    return $minutes > 0 ? $minutes * 60 : null;
+}
+
+function parse_buff_effects(string $buff): array
+{
+    $effects = [];
+    $buff = trim($buff);
+    if ($buff === '') {
+        return $effects;
+    }
+
+    $add = static function (string $keyword, int|float $value, string $unit, ?int $duration) use (&$effects): void {
+        $effects[] = [
+            'keyword' => $keyword,
+            'value' => $value,
+            'unit' => $unit,
+            'duration_seconds' => $duration,
+        ];
+    };
+
+    $duration = buff_duration_seconds($buff);
+
+    $matches = [];
+    if (preg_match_all('/\+(\d+(?:\.\d+)?)\s+energy\s+cap\b/i', $buff, $matches)) {
+        foreach ($matches[1] as $value) {
+            $add('energy cap', effect_number($value), 'points', $duration);
+        }
+    }
+
+    if (preg_match_all('/\+(\d+(?:\.\d+)?)\s+energy\/sec\b/i', $buff, $matches)) {
+        foreach ($matches[1] as $value) {
+            $add('energy/sec', effect_number($value), 'points', $duration);
+        }
+    }
+
+    if (preg_match_all('/\+(\d+(?:\.\d+)?)\s+HP\/sec\b/i', $buff, $matches)) {
+        foreach ($matches[1] as $value) {
+            $add('HP/sec', effect_number($value), 'points', $duration);
+        }
+    }
+
+    if (preg_match_all('/\+(\d+(?:\.\d+)?)%\s+(speed|acceleration)\b/i', $buff, $matches)) {
+        foreach ($matches[1] as $index => $value) {
+            $add(strtolower($matches[2][$index]), effect_number($value), 'percent', $duration);
+        }
+    }
+
+    if (preg_match_all('/\+(\d+(?:\.\d+)?)\s+energy(?!\s*(?:cap|\/))/i', $buff, $matches)) {
+        foreach ($matches[1] as $value) {
+            $add('energy', effect_number($value), 'points', $duration);
+        }
+    }
+
+    if (preg_match('/\b(\d+(?:\.\d+)?)x\s+base\s+energy\b/i', $buff, $matches)) {
+        $add('base energy', effect_number($matches[1]), 'multiplier', $duration);
+    }
+
+    if (preg_match('/\b(\d+(?:\.\d+)?)x\s+energy\b/i', $buff, $matches)) {
+        $multiplierDuration = preg_match('/\bthen\b/i', $buff)
+            ? buff_duration_seconds($buff, true)
+            : $duration;
+        $add('energy', effect_number($matches[1]), 'multiplier', $multiplierDuration);
+    }
+
+    if (preg_match('/\bduration\s+(\d+)\s+minutes?\b/i', $buff, $matches)) {
+        $add('duration', (int) $matches[1], 'minutes', null);
+    }
+
+    if (preg_match('/\Resurrected\b/i', $buff)) {
+        $add('Resurrected', 1, 'item', null);
+    }
+
+    if (str_contains($buff, ':')) {
+        $label = trim(explode(':', $buff, 2)[0]);
+        if (preg_match('/^[A-Za-z][A-Za-z0-9 _-]{1,48}$/', $label)) {
+            $add(strtolower($label), 1, 'item', null);
+        }
+    }
+
+    if (empty($effects)) {
+        $add($buff, 1, 'item', null);
+    }
+
+    return $effects;
+}
+
+function entry_epoch(array $entry): ?int
+{
+    $timestamp = $entry['timestamp_utc'] ?? null;
+    if (!is_string($timestamp) || $timestamp === '') {
+        return null;
+    }
+    try {
+        return (new DateTimeImmutable($timestamp, new DateTimeZone('UTC')))->getTimestamp();
+    } catch (Exception $exception) {
+        return null;
+    }
+}
+
+
 $action = request_string('action') ?? 'stats';
 $key = request_string('key') ?? '';
 if ($token === '' || $key === '' || !hash_equals($token, $key)) {
@@ -154,7 +267,7 @@ if ($action === 'meals_delete') {
 }
 
 // The remaining actions retain the lightweight game API and always validate meal IDs against meals.json.
-if (!in_array($action, ['stats', 'entries', 'feed', 'activity', 'log'], true)) fail('invalid_action');
+if (!in_array($action, ['stats', 'entries', 'feed', 'activity', 'log', 'effects'], true)) fail('invalid_action');
 if ($action === 'log') {
     $meal = request_string('meal') ?? '';
     if (!array_key_exists($meal, $catalog)) fail('invalid_meal');
@@ -251,6 +364,85 @@ $data = read_json_file(
     ['version' => 1, 'players' => [], 'entries' => []]
 );
 $entries = is_array($data['entries'] ?? null) ? array_values($data['entries']) : [];
+if ($action === 'effects') {
+    $player = request_string('player') ?: 'CJLBee';
+    if (!preg_match('/^[A-Za-z0-9 _-]{1,32}$/', $player)) fail('invalid_player');
+
+    $now = time();
+    $aggregated = [];
+    $inventory = [];
+
+    foreach ($entries as $entry) {
+        if (!is_array($entry) || ($entry['player'] ?? null) !== $player) {
+            continue;
+        }
+
+        $mealId = is_string($entry['meal'] ?? null) ? $entry['meal'] : '';
+        $hasStoredBuffs = array_key_exists('buffs', $entry) && is_array($entry['buffs']);
+        $buffs = $hasStoredBuffs
+            ? array_values($entry['buffs'])
+            : (is_array($catalog[$mealId]['buffs'] ?? null) ? array_values($catalog[$mealId]['buffs']) : []);
+        $timestamp = entry_epoch($entry);
+
+        foreach ($buffs as $buff) {
+            if (!is_string($buff)) {
+                continue;
+            }
+
+            foreach (parse_buff_effects($buff) as $effect) {
+                $keyword = $effect['keyword'];
+                $inventory[$keyword] = true;
+
+                $remaining = null;
+                if ($effect['duration_seconds'] !== null) {
+                    if ($timestamp === null) {
+                        continue;
+                    }
+                    $remaining = ($timestamp + $effect['duration_seconds']) - $now;
+                    if ($remaining <= 0) {
+                        continue;
+                    }
+                }
+
+                if (!isset($aggregated[$keyword])) {
+                    $aggregated[$keyword] = [
+                        'keyword' => $keyword,
+                        'value' => 0,
+                        'unit' => $effect['unit'],
+                        'remaining_seconds' => $remaining,
+                    ];
+                }
+
+                $aggregated[$keyword]['value'] += $effect['value'];
+
+                if ($remaining === null) {
+                    $aggregated[$keyword]['remaining_seconds'] = null;
+                } elseif (
+                    $aggregated[$keyword]['remaining_seconds'] !== null
+                    && $remaining < $aggregated[$keyword]['remaining_seconds']
+                ) {
+                    $aggregated[$keyword]['remaining_seconds'] = $remaining;
+                }
+            }
+        }
+    }
+
+    $effects = array_values($aggregated);
+    usort($effects, static function (array $left, array $right): int {
+        return strcasecmp($left['keyword'], $right['keyword']);
+    });
+
+    $keywords = array_keys($inventory);
+    usort($keywords, 'strcasecmp');
+
+    respond([
+        'ok' => true,
+        'player' => $player,
+        'effects' => $effects,
+        'inventory' => $keywords,
+    ]);
+}
+
 if ($action === 'entries' || $action === 'feed' || $action === 'activity') {
     respond([
         'ok' => true,
