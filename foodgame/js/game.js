@@ -29,7 +29,8 @@ async function loadMeals() {
   }
   try {
     const result = await get(key, { action: 'meals' });
-    renderMealList(result.meals);
+    renderMealList(result.meals); 
+    updateDeleteMealButton();
   } catch (error) {
     renderMealList([]);
     setStatus('Could not load meals; using offline meals.');
@@ -69,6 +70,40 @@ if (submit) submit.disabled = true;
   }
 }
 
+var CORE_MEALS = ['noodle-masterpiece', 'scrap-mechanic-snack', 'boss', 'fruit-fuel'];
+
+function updateDeleteMealButton() {
+    var btn = $('delete-meal-btn');
+    if (!btn) return;
+    var id = $('meal').value;
+    btn.disabled = CORE_MEALS.indexOf(id) !== -1;
+}
+
+async function deleteMeal(event) {
+    event.preventDefault();
+    var key = savedKey() || apiKeyValue();
+    if (!key) {
+        setStatus('Add the API key in Settings first.');
+        return;
+    }
+    var id = $('meal').value;
+    if (!id) {
+        setStatus('Select a meal to delete.');
+        return;
+    }
+    var btn = $('delete-meal-btn');
+    if (btn) btn.disabled = true;
+    try {
+        var result = await post(key, { action: 'meals_delete', id: id });
+        renderMealList(result.meals);
+        updateDeleteMealButton();
+        setStatus('Meal deleted.', true);
+    } catch (error) {
+        setStatus(error.message);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
 
 let lastActivityId = null;
 
@@ -89,5 +124,7 @@ on('poll-activity', 'click', handle(pollActivity));
 on('meal-form', 'submit', logMeal);
 on('add-meal-form', 'submit', addMeal);
 on('show-add-meal', 'change', function (event) { toggleAddMeal(event.target.checked); });
+on('delete-meal-btn', 'click', deleteMeal);
+on('meal', 'change', updateDeleteMealButton);
 handle(async function () { await loadMeals(); if (savedKey()) await loadAll(); })();
 
