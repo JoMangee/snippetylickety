@@ -160,7 +160,7 @@ if ($action === 'log') {
     if (!array_key_exists($meal, $catalog)) fail('invalid_meal');
     $ratingRaw = request_string('rating') ?? '';
     if (!preg_match('/^(?:10|[1-9])$/', $ratingRaw)) fail('invalid_rating');
-    $player = request_string('player') ?: 'CJLBer';
+    $player = request_string('player') ?: 'CJLBee';
     if (!preg_match('/^[A-Za-z0-9 _-]{1,32}$/', $player)) fail('invalid_player');
     if (!is_dir($storage) && !@mkdir($storage, 0700, true) && !is_dir($storage)) {
         fail('storage_unavailable', 500);
