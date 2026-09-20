@@ -35,11 +35,11 @@ export function renderBuff(data) {
                 ? 'persistent'
                 : `${Math.max(1, Math.ceil(Number(effect.remaining_seconds) / 60))} min remaining`;
             return `<span><strong>${escape(effect.keyword)}</strong>${value ? `: ${escape(value)}` : ''} <small>${escape(remaining)}</small></span>`;
-        }).join('')}</div>`
+        }).join(' ')}</div>`
         : '<h3>NO ACTIVE EFFECTS</h3>';
 
     const inventoryMarkup = inventory.length
-        ? `<h3>🎒 KEYWORD INVENTORY</h3><div>${inventory.map((keyword) => `<span>${escape(keyword)}</span>`).join('')}</div>`
+        ? `<h3>🎒 KEYWORD INVENTORY</h3><div>${inventory.map((keyword) => `<span>${escape(keyword)}</span>`).join(' ')}</div>`
         : '<p>No keyword items carried.</p>';
 
     card.innerHTML = effectMarkup + inventoryMarkup;
