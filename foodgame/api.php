@@ -139,7 +139,23 @@ if ($action === 'meals_add') {
     $updated = meal_catalog($document);
     respond(['ok' => true, 'meals' => array_values($updated)]);
 
-    
+
+}
+
+if ($action === 'meals_delete') {
+    $id = request_string('id');
+    if ($id === null || !preg_match('/^[a-z0-9-]{1,64}$/', $id)) fail('invalid_meal_id');
+    $meals = is_array($document['meals'] ?? null) ? $document['meals'] : [];
+    if (!array_key_exists($id, $meals)) {
+        $updated = meal_catalog($document);
+        respond(['ok' => true, 'meals' => array_values($updated)]);
+    }
+    unset($meals[$id]);
+    $document['version'] = isset($document['version']) ? (int) $document['version'] : 1;
+    $document['meals'] = $meals;
+    if (!persist_meals($mealsFile, $document)) fail('meal_persist_failed', 500);
+    $updated = meal_catalog($document);
+    respond(['ok' => true, 'meals' => array_values($updated)]);
 }
 
 
@@ -171,4 +187,4 @@ if ($action === 'log') {
 $data = read_json_file($storage . DIRECTORY_SEPARATOR . 'foodgame-data.json', ['version' => 1, 'players' => [], 'entries' => []]);
 $entries = is_array($data['entries'] ?? null) ? array_values($data['entries']) : [];
 if ($action === 'entries' || $action === 'feed' || $action === 'activity') respond(['ok' => true, 'entries' => array_slice($entries, -25)]);
-respond(['ok' => true, 'player' => request_string('player') ?: 'CJLBer', 'stats' => ['meals_logged' => count($entries)]]);
+respond(['ok' => true, 'player' => request_string('player') ?: 'CJLBee', 'stats' => ['meals_logged' => count($entries)]]);
