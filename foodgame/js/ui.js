@@ -12,7 +12,7 @@ export function renderStats(data) { const stats = data?.stats || {}; text('level
 export function renderBuff(entry) { const card = $('buff-card'); if (!card) return; const summary = entry?.summary; if (!summary) { card.innerHTML = '<p>Ready to cook! Noodle Masterpiece is spice 8 and lasts 15 minutes when the roll succeeds.</p>'; return; } const buffs = summary.buffs_applied || []; card.innerHTML = buffs.length ? `<h3>🍜 BUFFS ONLINE</h3><p>Exact canon roll succeeded: ${escape(summary.spice_result)}.</p><div class="pill-row">${buffs.map((buff) => `<span class="pill">${escape(buff)}</span>`).join('')}</div>` : `<h3>READY TO COOK</h3><p>Spice result: ${escape(summary.spice_result || 'debuffed')}. Buff chance: ${escape(summary.buff_chance_percent ?? 0)}%.</p>`; }
 export function renderHistory(entries) { list('history', entries.slice().reverse(), (entry) => entryMarkup(entry)); }
 export function renderFeed(entries) { list('feed', entries.slice().reverse(), (entry) => entryMarkup(entry, true)); }
-export function renderActivity(entries) { list('activity', entries, (entry) => entryMarkup(entry, true)); }
+export function renderActivity(entries) { list('activity', entries.slice().reverse(), (entry) => entryMarkup(entry, true)); }
 export function setPlayerValue(value) { $('player').value = value || DISPLAY_NAME; }
 export function playerValue() { return $('player')?.value.trim() || DISPLAY_NAME; }
 export function apiKeyValue() { return $('api-key')?.value.trim() || ''; }
