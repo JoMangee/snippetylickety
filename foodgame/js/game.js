@@ -73,9 +73,9 @@ if (submit) submit.disabled = true;
 var CORE_MEALS = ['noodle-masterpiece', 'scrap-mechanic-snack', 'boss', 'fruit-fuel'];
 
 function updateDeleteMealButton() {
-    var btn = $('delete-meal-btn');
+    var btn = document.getElementById('delete-meal-btn');
     if (!btn) return;
-    var id = $('meal').value;
+    var id = document.getElementById('meal').value;
     btn.disabled = CORE_MEALS.indexOf(id) !== -1;
 }
 
@@ -86,12 +86,12 @@ async function deleteMeal(event) {
         setStatus('Add the API key in Settings first.');
         return;
     }
-    var id = $('meal').value;
+    var id = document.getElementById('meal').value;
     if (!id) {
         setStatus('Select a meal to delete.');
         return;
     }
-    var btn = $('delete-meal-btn');
+    var btn = document.getElementById('delete-meal-btn');
     if (btn) btn.disabled = true;
     try {
         var result = await post(key, { action: 'meals_delete', id: id });
