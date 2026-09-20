@@ -1,8 +1,15 @@
 import { get } from './api.js';
-import { apiKeyValue, formValues, on, renderActivity, renderBuff, renderFeed, renderHistory, renderStats, setApiKeyValue, setBusy, setConnected, setStatus } from './ui.js';
+import { apiKeyValue, formValues, on, playerValue as uiPlayerValue, renderActivity, renderBuff, renderFeed, renderHistory, renderStats, setApiKeyValue, setBusy, setConnected, setPlayerValue, setStatus } from './ui.js';
 
 const KEY_NAME = 'foodgameApiKey';
-const API_PLAYER_ID = 'CJLBee';
+const PLAYER_NAME = 'foodgamePlayer';
+function savedKey() { return localStorage.getItem(KEY_NAME) || ''; }
+function storeKey() { const key = apiKeyValue(); if (key) localStorage.setItem(KEY_NAME, key); return key; }
+function savedPlayer() { return localStorage.getItem(PLAYER_NAME) || 'CJLBee'; }
+function playerValue() { return uiPlayerValue().trim() || savedPlayer(); }
+function storePlayer() { const player = playerValue() || 'CJLBee'; localStorage.setItem(PLAYER_NAME, player); return player; }
+function currentPlayer() { return playerValue(); }
+
 export const MEALS = { 'noodle-masterpiece': { name: 'Noodle Masterpiece', spice: 8 }, 'scrap-mechanic-snack': { name: 'Scrap Mechanic Snack', spice: 3 }, boss: { name: 'Boss Meal', spice: 6 }, 'fruit-fuel': { name: 'Fruit Fuel', spice: 1 } };
 let lastActivityId = null;
 
@@ -15,12 +22,15 @@ function storeKey() { const key = apiKeyValue(); if (key) localStorage.setItem(K
 function currentPlayer() { return API_PLAYER_ID; }
 async function loadAll() { const key = savedKey() || apiKeyValue(); if (!key) throw new Error('Add the API key in Settings first.'); const [stats, feed, activity] = await Promise.all([get(key, { action: 'stats', player: currentPlayer() }), get(key, { action: 'feed' }), get(key, { action: 'activity' })]); renderStats(stats); renderHistory(stats.entries || []); renderFeed(feed.feed || []); renderActivity(activity.activity || []); lastActivityId = activity.next_since || lastActivityId; setConnected(true); setStatus('Stats, history, and feed loaded.', true); }
 async function pollActivity() { const key = savedKey() || apiKeyValue(); if (!key) throw new Error('Add the API key in Settings first.'); const params = { action: 'activity' }; if (lastActivityId !== null) params.since = String(lastActivityId); const result = await get(key, params); renderActivity(result.activity || []); lastActivityId = result.next_since || lastActivityId; setStatus(result.activity?.length ? `Found ${result.activity.length} newer entry${result.activity.length === 1 ? 'y' : 'yes'}.` : 'No newer activity ...', true); }
-async function saveKey() { const key = storeKey(); if (!key) throw new Error('Paste an API key first.'); await loadAll(); }
-async function logMeal(event) { event.preventDefault(); setBusy(true); try { const key = savedKey() || apiKeyValue(); if (!key) throw new Error('Add the API key in Settings first.'); const result = await get(key, { action: 'log', ...formValues(), player: API_PLAYER_ID }); renderStats(result); renderHistory(result.entries || []); renderBuff(result.entry); setConnected(true); lastActivityId = result.entry?.id || lastActivityId; setStatus(`Logged! +${result.xp_gained} XP ↗ level ${result.stats.level}.`, true); } catch (error) { setConnected(false); setStatus(error.message); } finally { setBusy(false); } }
+async function saveKey() { const key = storeKey(); if (!key) throw new Error('Paste an API key first.'); storePlayer(); await loadAll(); }
+async function logMeal(event) { event.preventDefault(); setBusy(true); try { const key = savedKey() || apiKeyValue(); if (!key) throw new Error('Add the API key in Settings first.'); storePlayer(); const result = await get(key, { action: 'log', ...formValues(), player: playerValue() }); renderStats(result); renderHistory(result.entries || []); renderBuff(result.entry); setConnected(true); lastActivityId = result.entry?.id || lastActivityId; const level = result.stats?.level; setStatus(level === undefined ? 'Logged!' : 'Logged! +' + result.xp_gained + ' XP level ' + level + '.', true); } catch (error) { setConnected(false); setStatus(error.message); } finally { setBusy(false); } }
+
 function handle(action) { return () => action().catch((error) => { setConnected(false); setStatus(error.message); }); }
 setApiKeyValue(savedKey());
+setPlayerValue(savedPlayer());
 on('save-key', 'click', handle(saveKey));
 on('refresh', 'click', handle(loadAll));
 on('poll-activity', 'click', handle(pollActivity));
 on('meal-form', 'submit', logMeal);
 if (savedKey()) handle(loadAll)();
+

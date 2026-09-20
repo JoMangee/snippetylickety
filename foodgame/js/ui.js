@@ -13,6 +13,7 @@ export function renderBuff(entry) { const card = $('buff-card'); if (!card) retu
 export function renderHistory(entries) { list('history', entries, (entry) => entryMarkup(entry)); }
 export function renderFeed(entries) { list('feed', entries, (entry) => entryMarkup(entry, true)); }
 export function renderActivity(entries) { list('activity', entries, (entry) => entryMarkup(entry, true)); }
+export function setPlayerValue(value) { $('player').value = value || DISPLAY_NAME; }
 export function playerValue() { return $('player')?.value.trim() || DISPLAY_NAME; }
 export function apiKeyValue() { return $('api-key')?.value.trim() || ''; }
 export function setApiKeyValue(value) { if ($('api-key')) $('api-key').value = value; }

@@ -35,7 +35,6 @@
     <section class="panel log-panel">
       <div class="panel-heading"><h2>Log a meal</h2><span class="badge warm">BIG XP</span></div>
       <form id="meal-form">
-        <label>Display name<input id="player" name="player" value="" maxlength="32" autocomplete="nickname" readonly required></label>
         <label>Meal<select id="meal" name="meal"><option value="noodle-masterpiece">Noodle Masterpiece ↗ spice 8</option><option value="scrap-mechanic-snack">Scrap Mechanic Snack ↗ spice 3</option><option value="boss">Boss Meal ↗ victory bonus</option><option value="fruit-fuel">Fruit Fuel ↗ spice 1</option></select></label>
         <label>Rating (0–10)<input id="rating" name="rating" type="number" min="0" max="10" step="1" value="8" required></label>
         <label class="check-row"><input id="new-food" name="new" type="checkbox"> First time eating this food <span>(+15 XP)</span></label>
@@ -45,7 +44,8 @@
     </section>
     <section class="panel settings-panel">
       <div class="panel-heading"><h2>Settings</h2><span class="badge cool">LOCAL KEY</span></div>
-      <label>API key<input id="api-key" type="password" autocomplete="off" placeholder="Paste your private deployer key"></label>
+      <label>Player ID<input id="player" name="player" value="CJLBee" maxlength="32" autocomplete="nickname" placeholder="CJLBee" required></label>
+      <label>API key<input id="api-key" type="password" autocomplete="on" placeholder="Paste your private deployer key"></label>
       <div class="settings-actions"><button id="save-key" class="secondary-button" type="button">Save key &amp; load stats</button><button id="refresh" class="quiet-button" type="button">Refresh all</button></div>
       <p class="small-copy">The key is stored only in this browser's localStorage. Never put a real key in public code.</p>
     </section>
