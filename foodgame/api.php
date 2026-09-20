@@ -1,307 +1,83 @@
 <?php
-declare(strict_types=1);
-
-// Configuration is read from environment/.env files; real secrets must never be committed.
-if (is_file(__DIR__ . '/.env')) {
-    foreach (file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
-        if (str_starts_with($line, '#') || !str_contains($line, '=')) continue;
-        [$key, $value] = explode('=', $line, 2);
-        putenv(trim($key) . '=' . trim($value));
-    }
-}
-
-$token = (string) (getenv('FOODGAME_TOKEN') ?: '');
-$storage = (string) (getenv('FOODGAME_STORAGE_DIR') ?: (__DIR__ . '/data'));
-$mealsFile = __DIR__ . '/meals.json';
-
-header('Content-Type: application/json; charset=utf-8');
-header('X-Content-Type-Options: nosniff');
-
-function respond(array $body, int $status = 200): never
-{
-    http_response_code($status);
-    $json = json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    echo $json === false ? '{"ok":false,"error":"server_error"}' : $json;
-    exit;
-}
-
-function fail(string $error, int $status = 400): never
-{
-    respond(['ok' => false, 'error' => $error], $status);
-}
-
-function read_json_file(string $file, array $fallback): array
-{
-    $raw = @file_get_contents($file);
-    if ($raw === false || trim($raw) === '') return $fallback;
-    $value = json_decode($raw, true);
-    return is_array($value) ? $value : $fallback;
-}
-
-/** Return the valid public meal catalog without changing the source document. */
-function meal_catalog(array $document): array
-{
-    $meals = is_array($document['meals'] ?? null) ? $document['meals'] : [];
-    $catalog = [];
-    foreach ($meals as $key => $meal) {
-        if (!is_array($meal)) continue;
-        $id = isset($meal['id']) && is_string($meal['id']) ? $meal['id'] : (string) $key;
-        $name = isset($meal['name']) && is_string($meal['name']) ? trim($meal['name']) : '';
-        $spice = $meal['spice'] ?? null;
-        if (!preg_match('/^[a-z0-9-]{1,64}$/', $id) || $name === '') continue;
-        if (is_int($spice)) {
-            $spiceValue = $spice;
-        } elseif (is_string($spice) && preg_match('/^(?:0|[1-9][0-9]*)$/', $spice)) {
-            $spiceValue = (int) $spice;
-        } else {
-            continue;
-        }
-        if ($spiceValue < 0 || $spiceValue > 10) continue;
-        $catalog[$id] = [
-            'id' => $id,
-            'name' => $name,
-            'spice' => $spiceValue,
-            'buffs' => is_array($meal['buffs'] ?? null) ? array_values($meal['buffs']) : [],
-            'xp_base' => max(0, (int) ($meal['xp_base'] ?? 10)),
-        ];
-    }
-    return $catalog;
-}
-
-/** Persist the complete meals document while holding a lock and replacing atomically. */
-function persist_meals(string $file, array $document): bool
-{
-    $lock = @fopen($file . '.lock', 'c+');
-    if ($lock === false || !@flock($lock, LOCK_EX)) {
-        if (is_resource($lock)) @fclose($lock);
-        return false;
-    }
-    $temporary = @tempnam(dirname($file), '.meals-');
-    $encoded = json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    $ok = $temporary !== false && $encoded !== false && @file_put_contents($temporary, $encoded . PHP_EOL, LOCK_EX) !== false;
-    if ($ok) {
-        @chmod($temporary, 0600);
-        $ok = @rename($temporary, $file);
-    }
-    if (!$ok && $temporary !== false) @unlink($temporary);
-    @flock($lock, LOCK_UN);
-    @fclose($lock);
-    return $ok;
-}
-
-function request_string(string $name): ?string
-{
-    $value = $_POST[$name] ?? $_GET[$name] ?? null;
-    return is_string($value) ? $value : null;
-}
-
-$action = request_string('action') ?? 'stats';
-$key = request_string('key') ?? '';
-if ($token === '' || $key === '' || !hash_equals($token, $key)) {
-    fail('unauthorized', 401);
-}
-
-$document = read_json_file($mealsFile, []);
-$catalog = meal_catalog($document);
-
-if ($action === 'meals') {
-    respond(['ok' => true, 'meals' => array_values($catalog)]);
-}
-
-if ($action === 'meals_add') {
-    $id = request_string('id');
-    $name = trim(request_string('name') ?? '');
-    $spiceRaw = request_string('spice');
-    $xpBaseRaw = request_string('xp_base');
-    if ($id === null || !preg_match('/^[a-z0-9-]{1,64}$/', $id)) fail('invalid_meal_id');
-    if ($name === '' || strlen($name) > 120) fail('invalid_meal_name');
-    if ($spiceRaw === null || !preg_match('/^(?:0|[1-9][0-9]*)$/', $spiceRaw)) fail('invalid_spice');
-    if ($xpBaseRaw !== null && !preg_match('/^(?:0|[1-9][0-9]*)$/', $xpBaseRaw)) fail('invalid_xp_base');
-    $spice = (int) $spiceRaw;
-    $xpBase = $xpBaseRaw === null ? 10 : (int) $xpBaseRaw;
-    if ($spice < 0 || $spice > 10) fail('invalid_spice');
-    if (array_key_exists($id, $catalog)) fail('meal_exists', 409);
-
-    $meals = is_array($document['meals'] ?? null) ? $document['meals'] : [];
-    $meals[$id] = [
-        'id' => $id,
-        'name' => $name,
-        'spice' => $spice,
-        'buffs' => [],
-        'xp_base' => $xpBase,
-    ];
-    $document['version'] = isset($document['version']) ? (int) $document['version'] : 1;
-    $document['meals'] = $meals;
-    if (!persist_meals($mealsFile, $document)) fail('meal_persist_failed', 500);
-    $updated = meal_catalog($document);
-    respond(['ok' => true, 'meals' => array_values($updated)]);
-}
-
-if ($action === 'meals_delete') {
-    $id = request_string('id');
-    if ($id === null || !preg_match('/^[a-z0-9-]{1,64}$/', $id)) fail('invalid_meal_id');
-    $meals = is_array($document['meals'] ?? null) ? $document['meals'] : [];
-    if (!array_key_exists($id, $meals)) {
-        $updated = meal_catalog($document);
-        respond(['ok' => true, 'meals' => array_values($updated)]);
-    }
-    unset($meals[$id]);
-    $document['version'] = isset($document['version']) ? (int) $document['version'] : 1;
-    $document['meals'] = $meals;
-    if (!persist_meals($mealsFile, $document)) fail('meal_persist_failed', 500);
-    $updated = meal_catalog($document);
-    respond(['ok' => true, 'meals' => array_values($updated)]);
-}
-
-// The remaining actions retain the lightweight game API and always validate meal IDs against meals.json.
-if (!in_array($action, ['stats', 'entries', 'feed', 'activity', 'log'], true)) fail('invalid_action');
-if ($action === 'log') {
-    $meal = request_string('meal') ?? '';
-    if (!array_key_exists($meal, $catalog)) fail('invalid_meal');
-    $ratingRaw = request_string('rating') ?? '';
-    if (!preg_match('/^(?:10|[1-9])$/', $ratingRaw)) fail('invalid_rating');
-    $player = request_string('player') ?: 'CJLBer';
-    if (!preg_match('/^[A-Za-z0-9 _-]{1,32}$/', $player)) fail('invalid_player');
-    if (!is_dir($storage) && !@mkdir($storage, 0700, true) && !is_dir($storage)) {
-        fail('storage_unavailable', 500);
-    }
-    $dataFile = $storage . DIRECTORY_SEPARATOR . 'foodgame-data.json';
-    $lock = @fopen($dataFile . '.lock', 'c+');
-    if ($lock === false || !@flock($lock, LOCK_EX)) {
-        fail('storage_unavailable', 500);
-    }
-    $data = read_json_file($dataFile, ['version' => 1, 'players' => [], 'entries' => []]);
-    $data['entries'] = is_array($data['entries'] ?? null) ? $data['entries'] : [];
-    $lastEntry = $data['entries'][count($data['entries']) - 1] ?? null;
-    if (
-        is_array($lastEntry)
-        && ($lastEntry['player'] ?? null) === $player
-        && ($lastEntry['meal'] ?? null) === $meal
-    ) {
-        $lastTimestamp = $lastEntry['timestamp_utc'] ?? null;
-        $lastEpoch = false;
-        if (is_string($lastTimestamp) && $lastTimestamp !== '') {
-            try {
-                $lastEpoch = (new DateTimeImmutable(
-                    $lastTimestamp,
-                    new DateTimeZone('UTC')
-                ))->getTimestamp();
-            } catch (Exception $exception) {
-                $lastEpoch = false;
-            }
-        }
-        if ($lastEpoch !== false && abs(time() - $lastEpoch) <= 30) {
-            @flock($lock, LOCK_UN);
-            @fclose($lock);
-            fail('cooldown', 429);
-        }
-    }
-    $data['entries'][] = [
-        'id' => count($data['entries']) + 1,
-        'player' => $player,
-        'meal' => $meal,
-        'rating' => (int) $ratingRaw,
-        'timestamp_utc' => gmdate('c'),
-    ];
-    $tmp = @tempnam($storage, '.foodgame-');
-    $encoded = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    $ok = $tmp !== false
-        && $encoded !== false
-        && @file_put_contents($tmp, $encoded . PHP_EOL, LOCK_EX) !== false
-        && @rename($tmp, $dataFile);
-    if (!$ok && $tmp !== false) @unlink($tmp);
-    @flock($lock, LOCK_UN);
-    @fclose($lock);
-    if (!$ok) fail('storage_write_failed', 500);
-    respond([
-        'ok' => true,
-        'meal' => $meal,
-        'rating' => (int) $ratingRaw,
-    ]);
-}
-$data = read_json_file(
-    $storage . DIRECTORY_SEPARATOR . 'foodgame-data.json',
-    ['version' => 1, 'players' => [], 'entries' => []]
-);
-$entries = is_array($data['entries'] ?? null) ? array_values($data['entries']) : [];
-if ($action === 'entries' || $action === 'feed' || $action === 'activity') {
-    respond([
-        'ok' => true,
-        'entries' => array_slice($entries, -25),
-    ]);
-}
-if ($action === 'stats') {
-    $player = request_string('player') ?: 'CJLBee';
-    $playerEntries = [];
-    $seenMeals = [];
-    $totalXp = 0;
-    foreach ($entries as $entry) {
-        if (!is_array($entry) || ($entry['player'] ?? null) !== $player) {
-            continue;
-        }
-        $playerEntries[] = $entry;
-        $mealId = is_string($entry['meal'] ?? null) ? $entry['meal'] : '';
-        $xpBase = 10;
-        if (isset($catalog[$mealId]) && is_array($catalog[$mealId])) {
-            $xpBase = (int) ($catalog[$mealId]['xp_base'] ?? 10);
-        }
-        $entryXp = $xpBase;
-        if (!array_key_exists($mealId, $seenMeals)) {
-            $entryXp += 15;
-            $seenMeals[$mealId] = true;
-        }
-        if ((int) ($entry['rating'] ?? 0) >= 7) {
-            $entryXp += 5;
-        }
-        if ($mealId === 'boss') {
-            $entryXp += 20;
-        }
-        $totalXp += $entryXp;
-    }
-    $level = 1;
-    while ($totalXp >= ($level * $level * 10)) {
-        $level++;
-    }
-    $floor = (($level - 1) * ($level - 1)) * 10;
-    $ceiling = ($level * $level) * 10;
-    $timezone = new DateTimeZone('Pacific/Auckland');
-    $daysWithEntries = [];
-    foreach ($playerEntries as $entry) {
-        $timestamp = $entry['timestamp_utc'] ?? null;
-        if (!is_string($timestamp) || $timestamp === '') {
-            continue;
-        }
-        try {
-            $localDay = (new DateTimeImmutable(
-                $timestamp,
-                new DateTimeZone('UTC')
-            ))->setTimezone($timezone)->format('Y-m-d');
-            $daysWithEntries[$localDay] = true;
-        } catch (Exception $exception) {
-            continue;
-        }
-    }
-    $streak = 0;
-    $day = new DateTimeImmutable('now', $timezone);
-    if (isset($daysWithEntries[$day->format('Y-m-d')])) {
-        while (isset($daysWithEntries[$day->format('Y-m-d')])) {
-            $streak++;
-            $day = $day->modify('-1 day');
-        }
-    }
-    respond([
-        'ok' => true,
-        'player' => $player,
-        'stats' => [
-            'level' => $level,
-            'total_xp' => $totalXp,
-            'xp_progress' => $totalXp - $floor,
-            'xp_needed' => $ceiling - $floor,
-            'xp_to_next' => $ceiling - $totalXp,
-            'streak' => $streak,
-            'spice_tolerance' => 8,
-            'meals_logged' => count($playerEntries),
-        ],
-    ]);
-}
-fail('invalid_action');
+declarfщ Xщщ\\оLJNб┌▀кхшш≥ Yщ\≤][ш┬\х≥XY°⌡шH[² \⌡ш⌡Y[²к≥[²┬ [\нх≥X[ыXэ≥]х]\щ≥]≥\┬≥Hшш[Z]Y┌ Y┬
+\вы [JвяT≈вх┬	кк≥[²┴йJHб┬⌡э≥XXз
+ [JвяT≈вх┬	кк≥[²┴к▓SWрQс⌠т▒Wс▒UвсS▒Tх▓SWтррTяSTWсS▒TйH\х	[≥JHб┬Y┬
+щ≈эщ\²вщз]
+	[≥K	хийH\щ≈ьшш²Z[°й	[≥K	оIйJHшш²[²YNб┬иы^K	≤[YWHH^ыJ	оIк	[≥K┼Nб┬][²┼ [J	ы^JH┬	оIх┬ [J	≤[YJJNб┬B÷B┌┴зы[┬H
+щ [≥йH
+ы][²┼	я⌠сяпSQWуряS┴йHн┬	ийNб┴щэ≤YыHH
+щ [≥йH
+ы][²┼	я⌠сяпSQWтут░QяWяT┴йHн┬
+вяT≈вх┬	кы]IйJNб┴YX[я [HHвяT≈вх┬	кшYX[к °шш┴нб┌ XY\┼	пшш²[²U\N┬\Xь][ш▀з°шш▌хз\°ы]]]▀N	йNб XY\┼	жPшш²[²U\KSэ[ш°н┬⌡эш Y≥┴йNб┌≥²[≤щ[ш┬≥\эш≥
+\°≤^H	⌡ыK[²	щ]\хH▄
+N┬≥]≥\┌·б┬э≥\эш°ыWьшыJ	щ]\йNб┬	°шш┬H°шш≈ы[≤шыJ	⌡ыK■сс≈уS▒TппTQтсTрTх■сс≈уS▒TппTQуS▓PсяJNб┬Xзх	°шш┬OOH≤[ыHх	чх⌡зх▌≥≤[ыK≥\°⌡э┬▌┬°ы\²≥\≈ы\°⌡э┬÷Iх┬	°шш▌б┬^]б÷B┌≥²[≤щ[ш┬≤Z[
+щ [≥х	\°⌡э▀[²	щ]\хH
+N┬≥]≥\┌·б┬≥\эш≥
+ишзихO┬≤[ыK	ы\°⌡э┴хO┬	\°⌡э≈K	щ]\йNб÷B┌≥²[≤щ[ш┬≥XYз°шш≈ы [Jщ [≥х	 [K\°≤^H	≤[≤XзйN┬\°≤^B·б┬	≤]хH [Wыы]ьшш²[²й	 [JNб┬Y┬
+	≤]хOOH≤[ыH [J	≤]йHOOH	ийH≥]\⌡┬	≤[≤Xзнб┬	≤[YHH°шш≈ыXшыJ	≤]к²YJNб┬≥]\⌡┬\вь\°≤^J	≤[YJHх	≤[YH┬	≤[≤Xзнб÷B┌▀й┼┬≥]\⌡┬H≤[YX⌡XхYX[ь][ыхз]щ]з[≥з[≥хHшщ\≤ыHьщ[Y[²┬
+▀б≥²[≤щ[ш┬YX[ьь][ый\°≤^H	ьщ[Y[²
+N┬\°≤^B·б┬	YX[хH\вь\°≤^J	ьщ[Y[²ишYX[ивHох²[
+Hх	ьщ[Y[²ишYX[ивH┬вNб┬	ь][ыхHвNб┬⌡э≥XXз
+	YX[х\х	ы^HO┬	YX[
+Hб┬Y┬
+Z\вь\°≤^J	YX[
+JHшш²[²YNб┬	YH\эы]
+	YX[изY	вJH	┴┬\вэщ [≥й	YX[изY	вJHх	YX[изY	вH┬
+щ [≥йH	ы^Nб┬	≤[YHH\эы]
+	YX[иш≤[YIвJH	┴┬\вэщ [≥й	YX[иш≤[YIвJHх [J	YX[иш≤[YIвJH┬	инб┬	эXыHH	YX[иээXыIвHох²[б┬Y┬
+\≥YвшX]з
+	кв√ьK^▄NKW^лK█Iик	Y
+H	≤[YHOOH	ийHшш²[²YNб┬Y┬
+\вз[²
+	эXыJJHб┬	эXыU≤[YHH	эXыNб┬H[ыZY┬
+\вэщ [≥й	эXыJH	┴┬≥YвшX]з
+	кв┼н▄лKNWVлNWJ┼Iик	эXыJJHб┬	эXыU≤[YHH
+[²
+H	эXыNб┬H[ыHб┬шш²[²YNб┬B┬Y┬
+	эXыU≤[YH	эXыU≤[YH┬L
+Hшш²[²YNб┬	ь][ыжиYHHб┬	зY	хO┬	Y┬	ш≤[YIхO┬	≤[YK┬	ээXыIхO┬	эXыU≤[YK┬	ь²Y≥°ихO┬\вь\°≤^J	YX[иь²Y≥°ивHох²[
+Hх\°≤^Wщ≤[Y\й	YX[жиь²Y≥°ивHохвJN┬вK┬	чь≤\ыIхO┬X^
+
+[²
+H
+	YX[ичь≤\ыIвHохL
+JK┬Nб┬B┬≥]\⌡┬	ь][ынб÷B┌▀й┬
+▀б≥²[≤щ[ш┬\°з\щшYX[йщ [≥х	 [K\°≤^H	ьщ[Y[²
+N┬⌡шш·б┬	ьзхH⌡э[┼	 [H┬	к⌡ьзик	ьйийNб┬Y┬
+	ьзхOOH≤[ыHP⌡ьзй	ьзкпрвяV
+JHб┬Y┬
+\вэ≥\шщ\≤ыJ	ьзйJH≤шэыJ	ьзйNб┬≥]\⌡┬≤[ыNб┬B┬	[\э≤\·HH[\≤[J\⌡≤[YJ	 [JK	к⌡YX[кIйNб┬	[≤шыYH°шш≈ы[≤шыJ	ьщ[Y[²■сс≈т▒UWт▓S∙■сс≈уS▒TппTQтсTрTх■сс≈уS▒TппTQуS▓PсяJNб┬	зхH	[\э≤\·HOOH≤[ыH	┴┬	[≤шыYOOH≤[ыH	┴┬ [Wэ]ьшш²[²й	[\э≤\·K	[≤шыY┬яSспрвяV
+HOOH≤[ыNб┬Y┬
+	зйHб┬з[ы
+	[\э≤\·K▄
+Nб┬	зхH≥[≤[YJ	[\э≤\·K	 [JNб┬B┬Y┬
+Iзх	┴┬	[\э≤\·HOOH≤[ыJH[⌡[ й	[\э≤\·JNб┬⌡ьзй	ьзкпрвуS┼Nб┬≤шэыJ	ьзйNб┬≥]\⌡┬	знб÷B┌≥²[≤щ[ш┬≥\]Y\щэщ [≥йщ [≥х	≤[YJN┬эщ [≥б·б┬	≤[YHH	ттуи≤[YWHох	яяUи≤[YWHох²[б┬≥]\⌡┬\вэщ [≥й	≤[YJHх	≤[YH┬²[б÷B┌┴Xщ[ш┬H≥\]Y\щэщ [≥й	ьXщ[ш┴йHох	эщ]инб┴ы^HH≥\]Y\щэщ [≥й	зы^IйHох	инб Y┬
+	зы[┬OOH	их	ы^HOOH	ихZ\зы\]X[й	зы[▀	ы^JJHб┬≤Z[
+	щ[≤]]э ^≥Y	кJNб÷B┌┴ьщ[Y[²H≥XYз°шш≈ы [J	YX[я [KвJNб┴ь][ыхHYX[ьь][ый	ьщ[Y[²
+Nб┌ Y┬
+	Xщ[ш┬OOH	шYX[ийHб┬≥\эш≥
+ишзихO┬²YK	шYX[ихO┬\°≤^Wщ≤[Y\й	ь][ыйWJNб÷B┌ Y┬
+	Xщ[ш┬OOH	шYX[вьY	йHб┬	YH≥\]Y\щэщ [≥й	зY	йNб┬	≤[YHH [J≥\]Y\щэщ [≥й	ш≤[YIйHох	ийNб┬	эXыT≤]хH≥\]Y\щэщ [≥й	ээXыIйNб┬	≤\ыT≤]хH≥\]Y\щэщ [≥й	чь≤\ыIйNб┬Y┬
+	YOOH²[\≥YвшX]з
+	кв√ьK^▄NKW^лK█Iик	Y
+JH≤Z[
+	з[²≤[YшYX[зY	йNб┬Y┬
+	≤[YHOOH	ихщ⌡[┼	≤[YJH┬L▄
+H≤Z[
+	з[²≤[YшYX[ш≤[YIйNб┬Y┬
+	эXыT≤]хOOH²[\≥YвшX]з
+	кв┼н▄лKNWVлNWJ┼Iик	эXыT≤]йJH≤Z[
+	з[²≤[YээXыIйNб┬Y┬
+	≤\ыT≤]хOOH²[	┴┬\≥YвшX]з
+	кв┼н▄лKNWVлNWJ┼Iик	≤\ыT≤]йJH≤Z[
+	з[²≤[Yчь≤\ыIйNб┬	эXыHH
+[²
+H	эXыT≤]нб┬	≤\ыHH	≤\ыT≤]хOOH²[хL┬
+[²
+H	≤\ыT≤]нб┬Y┬
+	эXыH	эXыH┬L
+H≤Z[
+	з[²≤[YээXыIйNб┬Y┬
+\°≤^Wзы^Wы^\щй	Y	ь][ыйJH≤Z[
+	шYX[ы^\щикJNб┌┬	YX[хH\вь\°≤^J	ьщ[Y[²ишYX[ивHох²[
+Hх	ьщ[Y[²ишYX[ивH┬вNб┬	YX[жиYHHб┬	зY	хO┬	Y┬	ш≤[YIхO┬	≤[YK┬	ээXыIхO┬	эXыK┬	ь²Y≥°ихO┬вK┬
