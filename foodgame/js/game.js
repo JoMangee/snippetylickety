@@ -45,7 +45,7 @@ async function addMeal(event) {
   const spice = document.getElementById('add-meal-spice')?.value.trim() || '';
   const xpBase = document.getElementById('add-meal-xp-base')?.value.trim() || '';
   const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
-if (!name || name.length > 120 || !id || !/^(?:0|[1-9][0-9])$/.test(spice) || Number(spice) > 10 || (xpBase !== '' && !/^(?:0|[1-9][0-9])$/.test(xpBase))) {
+if (!name || name.length > 120 || !id || !/^(?:0|[1-9][0-9]*)$/.test(spice) || Number(spice) > 10 || (xpBase !== '' && !/^(?:0|[1-9][0-9])$/.test(xpBase))) {
     setStatus('Enter a valid meal name, spice, and optional XP base.');
     return;
   }
