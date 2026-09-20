@@ -1,5 +1,5 @@
 import { get, post } from './api.js';
-import { apiKeyValue, formValues, on, playerValue as uiPlayerValue, populateMeals, renderActivity, renderBuff, renderFeed, renderHistory, renderStats, setApiKeyValue, setBusy, setConnected, setPlayerValue, setStatus } from './ui.js';
+import { apiKeyValue, formValues, on, playerValue as uiPlayerValue, populateMeals, renderActivity, renderBuff, renderFeed, renderHistory, renderStats, setApiKeyValue, setBusy, setConnected, setPlayerValue, setStatus, toggleAddMeal } from './ui.js';
 
 const KEY_NAME = 'foodgameApiKey';
 const PLAYER_NAME = 'foodgamePlayer';
