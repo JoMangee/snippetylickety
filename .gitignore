@@ -1,5 +1,6 @@
 .env
 foodgame/.env
 foodgame/data/
+foodgame/meals.json
 .deploy.env
 archives/*
