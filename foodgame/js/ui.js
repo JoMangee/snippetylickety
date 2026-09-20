@@ -9,6 +9,7 @@ function entryMarkup(entry, includePlayer = false) { const visiblePlayer = Strin
 export function setStatus(message, good = false) { const node = $('status'); if (!node) return; node.textContent = message; node.className = `status${good ? ' good' : ' bad'}`; }
 export function setConnected(connected) { $('connection-dot')?.classList.toggle('online', connected); }
 export function renderStats(data) { const stats = data?.stats || {}; text('level', stats.level ?? 1); text('total-xp', stats.total_xp ?? 0); text('streak', stats.streak ?? 0); text('tolerance', stats.spice_tolerance ?? 8); const progress = Number(stats.xp_progress ?? 0); const needed = Math.max(1, Number(stats.xp_needed ?? 10)); text('xp-copy', `${progress} / ${needed} XP until next level`); const fill = $('xp-fill'); if (fill) fill.style.width = `${Math.min(100, Math.max(0, progress / needed * 100))}%`; }
+export function renderActiveBadge(label) { const badge = document.querySelector('.buff-panel .badge'); if (badge) badge.textContent = label; }
 export function renderBuff(data) {
     const card = $('buff-card');
     if (!card) return;
