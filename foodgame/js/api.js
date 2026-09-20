@@ -18,3 +18,27 @@ export async function get(key, params = {}) {
   }
   return body;
 }
+
+export async function post(key, params = {}) {
+  const token = String(key || '').trim();
+  if (!token) throw new Error('Add the API key in Settings first.');
+  const bodyParams = new URLSearchParams({ ...params, key: token });
+  const response = await fetch(API_BASE, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+    },
+    body: bodyParams,
+    credentials: 'same-origin'
+  });
+  let body;
+  try { body = await response.json(); } catch { throw new Error('The API did not return JSON.'); }
+  if (!response.ok || body?.ok !== true) {
+    const error = new Error(body?.error === 'unauthorized' ? 'Unauthorized: check the API key.' : (body?.error || 'API error ' + response.status));
+    error.code = body?.error || 'http_' + response.status;
+    error.status = response.status;
+    throw error;
+  }
+  return body;
+}

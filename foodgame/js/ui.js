@@ -20,6 +20,32 @@ export function setApiKeyValue(value) { if ($('api-key')) $('api-key').value = v
 export function formValues() { return { player: playerValue(), meal: $('meal').value, rating: $('rating').value, new: $('new-food').checked ? '1' : '0' }; }
 export function setBusy(busy) { const button = $('meal-form button[type="submit"]'); if (button) { button.disabled = busy; button.textContent = busy ? '🍳 ROLLING…' : '🍽 LOG FOR ME'; } }
 export function on(id, event, handler) { $(id)?.addEventListener(event, handler); }
+export function populateMeals(meals) {
+    const node = $('meal');
+    if (!node) return;
+    const selected = node.value;
+    node.replaceChildren();
+    meals.sort(function (a, b) {
+        return a.name.localeCompare(b.name);
+    });
+    meals.forEach(function (meal) {
+        const option = document.createElement('option');
+        option.value = meal.id;
+        option.textContent = meal.name + ' - spice ' + meal.spice + ' - XP ' + meal.xp_base;
+        node.append(option);
+    });
+    if (Array.from(node.options).some(function (option) { return option.value === selected; })) {
+        node.value = selected;
+    }
+}
+
+export function toggleAddMeal(visible) {
+  const panel = $('add-meal-panel');
+  if (!panel) return;
+  panel.hidden = !visible;
+  panel.style.display = visible ? '' : 'none';
+}
+
 
 text('player-brand', `${DISPLAY_NAME}'S BRIGHT BITE LAB`);
 document.title = `${DISPLAY_NAME}'s Foodgame`;

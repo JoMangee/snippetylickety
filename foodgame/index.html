@@ -40,11 +40,21 @@
         <label class="check-row"><input id="new-food" name="new" type="checkbox"> First time eating this food <span>(+15 XP)</span></label>
         <button class="primary-button" type="submit">🍽 LOG FOR ME</button>
       </form>
+      <div id="add-meal-panel" hidden>
+      <form id="add-meal-form">
+        <label>Meal name<input id="add-meal-name" name="name" type="text" maxlength="120" required></label>
+        <label>Spice<input id="add-meal-spice" name="spice" type="number" min="0" max="10" step="1" required></label>
+        <label>Base XP, optional<input id="add-meal-xp-base" name="xp_base" type="number" min="0" step="1"></label>
+        <button class="secondary-button" type="submit">ADD MEAL</button>
+      </form>
+      </div>
+<p id="status" class="status" role="status" aria-live="polite">Add your API key in Settings to begin.</p>
       <p id="status" class="status" role="status" aria-live="polite">Add your API key in Settings to begin.</p>
     </section>
     <section class="panel settings-panel">
       <div class="panel-heading"><h2>Settings</h2><span class="badge cool">LOCAL KEY</span></div>
       <label>Player ID<input id="player" name="player" value="CJLBee" maxlength="32" autocomplete="nickname" placeholder="CJLBee" required></label>
+      <label class="check-row"><input id="show-add-meal" type="checkbox"> Show add meal form</label>
       <label>API key<input id="api-key" type="password" autocomplete="on" placeholder="Paste your private deployer key"></label>
       <div class="settings-actions"><button id="save-key" class="secondary-button" type="button">Save key &amp; load stats</button><button id="refresh" class="quiet-button" type="button">Refresh all</button></div>
       <p class="small-copy">The key is stored only in this browser's localStorage. Never put a real key in public code.</p>

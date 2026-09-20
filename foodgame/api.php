@@ -92,9 +92,10 @@ function persist_meals(string $file, array $document): bool
 
 function request_string(string $name): ?string
 {
-    $value = $_GET[$name] ?? null;
+    $value = $_POST[$name] ?? $_GET[$name] ?? null;
     return is_string($value) ? $value : null;
 }
+
 
 $action = request_string('action') ?: 'stats';
 $key = request_string('key') ?: '';
@@ -113,12 +114,16 @@ if ($action === 'meals_add') {
     $id = request_string('id');
     $name = trim(request_string('name') ?? '');
     $spiceRaw = request_string('spice');
+    $xpBaseRaw = request_string('xp_base');
     if ($id === null || !preg_match('/^[a-z0-9-]{1,64}$/', $id)) fail('invalid_meal_id');
     if ($name === '' || strlen($name) > 120) fail('invalid_meal_name');
-    if ($spiceRaw === null || !preg_match('/^(?:0|[1-9][0-9]*)$/', $spiceRaw)) fail('invalid_spice');
+    if ($spiceRaw === null || !preg_match('/^(?:0|[1-9][0-9])$/', $spiceRaw)) fail('invalid_spice');
+    if ($xpBaseRaw !== null && !preg_match('/^(?:0|[1-9][0-9])$/', $xpBaseRaw)) fail('invalid_xp_base');
     $spice = (int) $spiceRaw;
+    $xpBase = $xpBaseRaw === null ? 10 : (int) $xpBaseRaw;
     if ($spice < 0 || $spice > 10) fail('invalid_spice');
-    if (array_key_exists($id, $catalog)) fail('meal_exists', 409);
+    if (array_key_exists($id, $catalog)) fail('meal_exists',409);
+
 
     $meals = is_array($document['meals'] ?? null) ? $document['meals'] : [];
     $meals[$id] = [
@@ -126,14 +131,17 @@ if ($action === 'meals_add') {
         'name' => $name,
         'spice' => $spice,
         'buffs' => [],
-        'xp_base' => 10,
+        'xp_base' => $xpBase,
     ];
     $document['version'] = isset($document['version']) ? (int) $document['version'] : 1;
     $document['meals'] = $meals;
     if (!persist_meals($mealsFile, $document)) fail('meal_persist_failed', 500);
     $updated = meal_catalog($document);
     respond(['ok' => true, 'meals' => array_values($updated)]);
+
+    
 }
+
 
 // The remaining actions retain the lightweight game API and always validate meal IDs against meals.json.
 if (!in_array($action, ['stats', 'entries', 'feed', 'activity', 'log'], true)) fail('invalid_action');
