@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffcff3">
+  <title>Foodgame</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <a class="back-link" href="../">← Back to Snippetyllickety</a>
+    <header class="hero">
+      <p class="eyebrow" id="player-brand"></p>
+      <h1>FOODGAME!</h1>
+      <p>Log tasty meals, earn XP, level up, and build your spice tolerance.</p>
+    </header>
+    <section class="dashboard" aria-label="Player dashboard">
+      <article class="panel player-panel">
+        <div class="panel-heading"><h2>Player stats</h2><span id="connection-dot" class="dot" aria-hidden="true"></span></div>
+        <div class="stats-grid">
+          <div class="stat"><strong id="level">1</strong><span>Level</span></div>
+          <div class="stat"><strong id="total-xp">0</strong><span>Total XP</span></div>
+          <div class="stat"><strong id="streak">0</strong><span>Streak</span></div>
+          <div class="stat"><strong id="tolerance">8</strong><span>Spice tolerance</span></div>
+        </div>
+        <p id="xp-copy" class="small-copy">0 / 10 XP until next level</p>
+        <div class="progress-track" aria-label="XP progress"><span id="xp-fill"></span></div>
+      </article>
+      <article class="panel buff-panel">
+        <div class="panel-heading"><h2>Active effect</h2><span class="badge">NOODLE MASTERPIECE</span></div>
+        <div id="buff-card" class="buff-card"><p><strong>Spiciness 8.</strong> Log the masterpiece to roll for exact canon buffs.</p><div class="pill-row"><span class="pill">2× base energy</span><span class="pill">+70% speed</span><span class="pill">+20% acceleration</span><span class="pill">15 minutes</span></div></div>
+      </article>
+    </section>
+    <section class="panel log-panel">
+      <div class="panel-heading"><h2>Log a meal</h2><span class="badge warm">BIG XP</span></div>
+      <form id="meal-form">
+        <label>Display name<input id="player" name="player" value="" maxlength="32" autocomplete="nickname" readonly required></label>
+        <label>Meal<select id="meal" name="meal"><option value="noodle-masterpiece">Noodle Masterpiece ↗ spice 8</option><option value="scrap-mechanic-snack">Scrap Mechanic Snack ↗ spice 3</option><option value="boss">Boss Meal ↗ victory bonus</option><option value="fruit-fuel">Fruit Fuel ↗ spice 1</option></select></label>
+        <label>Rating (0–10)<input id="rating" name="rating" type="number" min="0" max="10" step="1" value="8" required></label>
+        <label class="check-row"><input id="new-food" name="new" type="checkbox"> First time eating this food <span>(+15 XP)</span></label>
+        <button class="primary-button" type="submit">🍽 LOG FOR ME</button>
+      </form>
+      <p id="status" class="status" role="status" aria-live="polite">Add your API key in Settings to begin.</p>
+    </section>
+    <section class="panel settings-panel">
+      <div class="panel-heading"><h2>Settings</h2><span class="badge cool">LOCAL KEY</span></div>
+      <label>API key<input id="api-key" type="password" autocomplete="off" placeholder="Paste your private deployer key"></label>
+      <div class="settings-actions"><button id="save-key" class="secondary-button" type="button">Save key &amp; load stats</button><button id="refresh" class="quiet-button" type="button">Refresh all</button></div>
+      <p class="small-copy">The key is stored only in this browser's localStorage. Never put a real key in public code.</p>
+    </section>
+    <section class="two-column">
+      <article class="panel"><div class="panel-heading"><h2>My history</h2><span class="badge cool">LATEST 25</span></div><div id="history" class="entry-list"><p class="small-copy">Your logged meals will appear here.</p></div></article>
+      <article class="panel"><div class="panel-heading"><h2>Activity feed</h2><button id="poll-activity" class="mini-button" type="button">Poll newer</button></div><div id="activity" class="entry-list"><p class="small-copy">Activity from all players appears here.</p></div></article>
+    </section>
+    <section class="panel feed-panel"><div class="panel-heading"><h2>Everyone's feed</h2><span class="badge">NEWEST FIRST</span></div><div id="feed" class="entry-list"><p class="small-copy">Load the feed after saving your key.</p></div></section>
+    <footer>Vanilla HTML / CSS / JavaScript ↗ one PHP JSON endpoint ↗ locked local JSON storage</footer>
+  </main>
+  <script type="module" src="js/api.js"></script>
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>
