@@ -196,11 +196,38 @@ if ($action === 'log') {
             fail('cooldown', 429);
         }
     }
+    $spice = (int)($catalog[$meal]['spice'] ?? 0);
+    $buffs = is_array($catalog[$meal]['buffs'] ?? null) ? array_values($catalog[$meal]['buffs']) : [];
+    $xpBase = (int)($catalog[$meal]['xp_base'] ?? 10);
+    $xpGained = $xpBase;
+    $hasPriorEntry = false;
+    foreach ($data['entries'] as $existingEntry) {
+        if (
+            is_array($existingEntry)
+            && ($existingEntry['player'] ?? null) === $player
+            && ($existingEntry['meal'] ?? null) === $meal
+        ) {
+            $hasPriorEntry = true;
+            break;
+        }
+    }
+    if (!$hasPriorEntry) {
+        $xpGained += 15;
+    }
+    if ((int) $ratingRaw >= 7) {
+        $xpGained += 5;
+    }
+    if ($meal === 'boss') {
+        $xpGained += 20;
+    }
     $data['entries'][] = [
         'id' => count($data['entries']) + 1,
         'player' => $player,
         'meal' => $meal,
         'rating' => (int) $ratingRaw,
+        'spice' => $spice,
+        'xp_gained' => $xpGained,
+        'buffs' => $buffs,
         'timestamp_utc' => gmdate('c'),
     ];
     $tmp = @tempnam($storage, '.foodgame-');
