@@ -1,6 +1,14 @@
 deployment:
   tasks:
     - source ~/.deploy.env
+    - export DEPLOYPATH=$DEPLOYPATH_POCKETSMITH
+    - mkdir -p $DEPLOYPATH
+    - echo "Deploying pocketsmith to $DEPLOYPATH"
+    - /bin/cp -rf pocketsmith/* $DEPLOYPATH
+    - find $DEPLOYPATH -type d -exec chmod 755 {} +
+    - find $DEPLOYPATH -type f -exec chmod 644 {} +
+    - if [ -d "$DEPLOYPATH/data" ]; then chmod 755 "$DEPLOYPATH/data"; fi
+    - source ~/.deploy.env
     - export DEPLOYPATH=$DEPLOYPATH_FOODGAME
     - echo "Deploying foodgame to $DEPLOYPATH"
     - mkdir -p $DEPLOYPATH
