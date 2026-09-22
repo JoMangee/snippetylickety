@@ -267,8 +267,32 @@ if ($action === 'meals_delete') {
 }
 
 // The remaining actions retain the lightweight game API and always validate meal IDs against meals.json.
-if (!in_array($action, ['stats', 'entries', 'feed', 'activity', 'log', 'effects'], true)) fail('invalid_action');
-if ($action === 'log') {
+if (!in_array($action, ['stats', 'entries', 'feed', 'activity', 'log', 'effects', 'cooldown'], true)) fail('invalid_action');
+
+function cooldown_remaining(array $entries, string $player, string $meal): int
+{
+    $last = $entries[count($entries) - 1] ?? null;
+    if (!is_array($last)||($last['player'] ?? null) !== $player||($last['meal'] ?? null) !== $meal) return 0;
+    $stamp = $last['timestamp_utc'] ?? null;
+    if (!is_string($stamp)||$stamp === '') return 0;
+    try {
+        $epoch = (new DateTimeImmutable($stamp, new DateTimeZone('UTC')))->getTimestamp();
+    } catch (Exception $e) {
+        return 0;
+    }
+    $left = 30 - abs(time() - $epoch);
+    return $left > 0 ? $left : 0;
+}
+
+if ($action === 'cooldown') {
+    $meal = request_string('meal') ?? '';
+    if (!array_key_exists($meal, $catalog)) fail('invalid_meal');
+    $player = request_string('player') ?: 'CJLBee';
+    if (!preg_match('/^[A-Za-z0-9 _-]{1,32}$/', $player)) fail('invalid_player');
+    $data = read_json_file($storage . DIRECTORY_SEPARATOR . 'foodgame-data.json', ['version' => 1, 'players' => [], 'entries' => []]);
+    $entries = is_array($data['entries'] ?? null) ? array_values($data['entries']) : [];
+    respond(['ok' => true, 'cooldown' => cooldown_remaining($entries, $player, $meal)]);
+}if ($action === 'log') {
     $meal = request_string('meal') ?? '';
     if (!array_key_exists($meal, $catalog)) fail('invalid_meal');
     $ratingRaw = request_string('rating') ?? '';

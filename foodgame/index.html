@@ -40,6 +40,7 @@
         <label class="check-row"><input id="new-food" name="new" type="checkbox"> First time eating this food <span>(+15 XP)</span></label>
         <button class="primary-button" type="submit">🍽 LOG FOR ME</button>
       </form>
+<p id="charge-status" class="charge-status" role="status" aria-live="polite">CHARGE MODE Ready to log</p>
       <div id="add-meal-panel" hidden>
       <form id="add-meal-form">
         <label>Meal name<input id="add-meal-name" name="name" type="text" maxlength="120" required></label>
@@ -65,6 +66,7 @@
     </section>
     <section class="panel feed-panel"><div class="panel-heading"><h2>Everyone's feed</h2><span class="badge">NEWEST FIRST</span></div><div id="feed" class="entry-list"><p class="small-copy">Load the feed after saving your key.</p></div></section>
     <footer>Vanilla HTML / CSS / JavaScript ↗ one PHP JSON endpoint ↗ locked local JSON storage</footer>
+<p class="build-info"><span id="build-version">Loading build...</span> · <a href="https://github.com/JoMangee/foodgame/builds" target="_blank" rel="noreferrer">GitHub build</a></p>
   </main>
   <script type="module" src="js/api.js"></script>
   <script type="module" src="js/ui.js"></script>

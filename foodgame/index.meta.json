@@ -4,5 +4,8 @@
   "description": "Gamified food tracker with XP, spice tolerance and Noodle Masterpiece buffs",
   "section": "Playable browser snippets",
   "featured": false,
-  "version": "1.0"
+  "version": "1.1",
+  "build": "MESHDEV-108",
+  "build_date": "2026-09-22",
+  "note": "click-to-charge + cooldown sync"
 }
