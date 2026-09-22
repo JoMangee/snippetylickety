@@ -4,4 +4,4 @@ foodgame/data/
 foodgame/meals.json
 .deploy.env
 archives/*
-__pycache__//*
+__pycache__/*
