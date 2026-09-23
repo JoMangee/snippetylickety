@@ -1,7 +1,0 @@
-deployment:
-  tasks:
-    - export DEPLOYPATH=/home/ACCOUNT/subdir/foodgame/
-    - /bin/cp -rf foodgame/* $DEPLOYPATH
-    - find $DEPLOYPATH -type d -exec chmod 755 {} +
-    - find $DEPLOYPATH -type f -exec chmod 644 {} +
-    - if [ -d "$DEPLOYPATH/data" ]; then chmod 755 "$DEPLOYPATH/data"; fi
